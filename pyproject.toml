@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "AutoAnswer"
+version = "0.1.0"
+description = ""
+authors = ["Rasul Taimaskhanov <81189712+taimaskhanov11@users.noreply.github.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiogram = {version = "^3.0.0b3", allow-prereleases = true, extras = ["i18n"]}
+loguru = "^0.6.0"
+pydantic = "^1.9.1"
+tortoise-orm = {extras = ["asyncpg"], version = "^0.19.1"}
+PyYAML = "^6.0"
+APScheduler = "^3.9.1"
+Telethon = {extras = ["cryptg"], version = "^1.24.0"}
+glqiwiapi = "^2.11"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

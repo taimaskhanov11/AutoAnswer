@@ -1,0 +1,9 @@
+bot:
+  token: your_token
+  admins:
+db:
+  user: postgres
+  password: postgres
+  database: autoanswer
+  host: localhost
+  port: 5432
