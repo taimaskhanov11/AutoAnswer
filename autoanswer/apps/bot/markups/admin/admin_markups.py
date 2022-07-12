@@ -14,14 +14,11 @@ back_to_admin = get_inline_button(("⬅️ Назад", "admin"))
 
 def admin_start():
     keyword = [
-        # ("📄 Список каналов для обязательной подписки", ChannelCallback(action=Action.all)),
-        # ("✍ Добавить канал для обязательной подписки", ChannelCallback(action=Action.create)),
         ("📈 Общая информация о боте", "statistics"),
         ("🔖 Сделать рассылку", "send_mail"),
         ("⚙ Настройки бота", "bot_settings"),
         ("🧾 Подписки", SubscriptionTemplateCallback(action=Action.all)),
         ("👥 Экспорт пользователей", "export_users"),
-        ("✍ Изменить текст меню", "change_menu"),
     ]
     builder = InlineKeyboardBuilder()
     for i in keyword:

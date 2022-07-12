@@ -1,6 +1,5 @@
+import asyncio
 from unittest import mock
-
-from loguru import logger
 
 from autoanswer.config.config import config
 from autoanswer.db.models import User
@@ -12,13 +11,18 @@ fields_nums = {
     "last_name": "4",
 }
 
-async def part_sending(message, answer):
+
+async def part_sending(message, answer, reply_markup=None):
     if len(answer) > 4096:
         for x in range(0, len(answer), 4096):
             y = x + 4096
-            await message.answer(answer[x:y])
+            if y >= len(answer):
+                await message.answer(answer[x: y], reply_markup=reply_markup)
+            else:
+                await message.answer(answer[x:y])
+            await asyncio.sleep(0.5)
     else:
-        await message.answer(answer)
+        await message.answer(answer, reply_markup=reply_markup)
 
 
 def parse_user_fields(fields_text: str) -> tuple:

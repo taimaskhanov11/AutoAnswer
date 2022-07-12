@@ -42,6 +42,7 @@ def parse_config():
 
 
 class Bot(BaseModel):
+    id: int | None
     token: str
     admins: Optional[list[int]]
 

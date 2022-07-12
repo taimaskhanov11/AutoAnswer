@@ -10,8 +10,13 @@ class Action(str, Enum):
     delete = "delete"
     edit = "edit"
 
-    connect = "connect"
     purchase = "purchase"
+
+
+class AccountAction(str, Enum):
+    bind = "bind"
+    unbind = "unbind"
+
 
 class UserCallback(CallbackData, prefix="user"):
     pk: int
@@ -21,7 +26,28 @@ class UserCallback(CallbackData, prefix="user"):
 class AccountCallback(CallbackData, prefix="account"):
     pk: int | None
     api_id: int | None
-    action: Action
+    action: Action | AccountAction
+
+
+class TriggerAction(str, Enum):
+    edit_answer = "edit_answer"
+    edit_phrases = "edit_phrases"
+
+
+class TriggerCallback(CallbackData, prefix="trigger"):
+    pk: int | None
+    action: Action | TriggerAction
+
+
+class TriggerCollectionAction(str, Enum):
+    switch = "switch"
+    edit_answer_to_all_messages = "edit_answer_to_all_messages"
+
+
+class TriggerCollectionCallback(CallbackData, prefix="trigger_collection"):
+    pk: int | None
+    action: Action | TriggerCollectionAction
+    payload: str | None
 
 
 class ChannelCallback(CallbackData, prefix="channel"):

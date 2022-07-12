@@ -44,9 +44,9 @@ async def view_account(call: types.CallbackQuery, callback_data: AccountCallback
 
 async def delete_account(call: types.CallbackQuery, callback_data: AccountCallback, state: FSMContext):
     await state.set_state()
-    account = await Account.get(pk=callback_data.pk)
+    account = await Account.get(pk=callback_data.pk).select_related("trigger_collection")
     await call.message.answer("Аккаунт удален", admin_markups.back())
-    controller: Controller = temp.controllers[call.from_user.id][account.api_id]
+    controller: Controller = temp.controllers[account.trigger_collection.pk]
     await controller.stop()
 
 

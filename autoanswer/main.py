@@ -9,6 +9,8 @@ from autoanswer.apps.bot.handlers.errors.errors_handlers import register_error
 from autoanswer.apps.bot.middleware.bot_middleware import BotMiddleware
 from autoanswer.apps.bot.utils import start_up_message
 from autoanswer.apps.bot.utils.purchase import checking_purchases
+from autoanswer.apps.controller.controller import init_controllers
+from autoanswer.config.config import config
 from autoanswer.config.logg_settings_new import init_logging
 from autoanswer.db import init_db
 from autoanswer.db.utils.backup import making_backup
@@ -26,7 +28,7 @@ async def set_commands(bot: Bot):
 async def start():
     # Настройка логирования
     init_logging(
-        level="TRACE",
+        level="INFO",
         steaming=True,
         write=True,
     )
@@ -35,6 +37,7 @@ async def start():
     # dp.shutdown.register(on_shutdown)
 
     # Установка команд бота
+    config.bot.id = (await bot.get_me()).id
     await set_commands(bot)
     dp.message.filter(F.chat.type == "private")
     # Инициализация бд
@@ -45,6 +48,8 @@ async def start():
 
     # Регистрация хэндлеров
     register_common_handlers(dp)
+
+    # Регистрация хэндлеров ошибок
     register_error(dp)
 
     # Регистрация middleware
@@ -53,15 +58,17 @@ async def start():
     dp.callback_query.outer_middleware(middleware)
 
     # Регистрация фильтров
+    # pass
+    # Инициализация контроллеров
+    await init_controllers()
 
     scheduler.add_job(making_backup, "interval", hours=1)
     scheduler.add_job(
         checking_purchases,
         "interval",
         # minutes=1,
-        seconds = 10,
+        seconds=60,
     )
-
     scheduler.start()
     await dp.start_polling(bot, skip_updates=True)
 

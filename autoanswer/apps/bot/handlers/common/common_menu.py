@@ -1,9 +1,10 @@
 from aiogram import Router, types
 from aiogram.dispatcher.fsm.context import FSMContext
+from aiogram.utils import markdown as md
 
 from autoanswer.apps.bot.markups.common import common_markups
 from autoanswer.db.models import User
-from aiogram.utils import markdown as md
+
 router = Router()
 
 

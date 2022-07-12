@@ -7,10 +7,10 @@ from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.utils import markdown as md
 from loguru import logger
 
-from autoanswer.apps.bot.callback_data.base_callback import AccountCallback, Action
+from autoanswer.apps.bot.callback_data.base_callback import AccountCallback, AccountAction
 from autoanswer.apps.bot.markups.admin import admin_markups
 from autoanswer.apps.bot.markups.common import common_markups
-from autoanswer.apps.bot.temp import controller_codes_queue, controllers
+from autoanswer.apps.bot.temp import controller_codes_queue
 from autoanswer.apps.controller.controller import ConnectAccountController
 from autoanswer.db.models import User, Account
 from autoanswer.loader import _
@@ -57,20 +57,18 @@ async def connect_account_phone(message: types.Message, user: User, state: FSMCo
 
         logger.info(f"{user.username}| Полученные данные {api_id}|{api_hash}|{phone}")
         controller = ConnectAccountController(
-            user_id=user.user_id,
-            username=user.username,
+            owner=user,
             phone=phone,
             api_id=api_id,
             api_hash=api_hash
         )
         controller_codes_queue[user.user_id] = Queue(maxsize=1)
         asyncio.create_task(controller.start())
-        controllers[controller.user_id][controller.api_id] = controller
         await state.set_state(ConnectAccount.code)
         await message.answer(_("Введите код подтверждения из сообщения Телеграмм с префиксом code, "
-                               f"в только таком виде: {md.code('code<ваш код>')}.\n"
-                               f"Например: {md.code('code43123')}\n"
-                               "Если отправить просто цифры то тг обнулит код\n"), 'markdown')
+                               f"в только таком виде: {md.hcode('code<ваш код>')}.\n"
+                               f"Например: {md.hcode('code43123')}\n"
+                               "Если отправить просто цифры то тг обнулит код\n"))
     except Exception as e:
         logger.critical(e)
         await message.answer(_("Неправильный ввод"))
@@ -100,6 +98,6 @@ def register_connect_account(dp: Router):
     callback = router.callback_query.register
     message = router.message.register
 
-    callback(connect_account, AccountCallback.filter(F.action == Action.connect))
+    callback(connect_account, AccountCallback.filter(F.action == AccountAction.bind))
     message(connect_account_phone, state=ConnectAccount.api)
     message(connect_account_code, state=ConnectAccount.code)

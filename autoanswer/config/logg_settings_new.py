@@ -2,8 +2,9 @@ import logging
 import sys
 from pathlib import Path
 
-from autoanswer.config.config import LOG_DIR
 from loguru import logger
+
+from autoanswer.config.config import LOG_DIR
 
 
 class InterceptHandler(logging.Handler):

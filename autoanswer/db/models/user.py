@@ -11,6 +11,9 @@ from tortoise.transactions import in_transaction
 from autoanswer.db.models.subscription import Subscription
 
 if typing.TYPE_CHECKING:
+    from autoanswer.db.models.trigger import TriggerCollection
+
+if typing.TYPE_CHECKING:
     from autoanswer.db.models.account import Account
 
 
@@ -45,6 +48,14 @@ class User(models.Model):
     async def switch_search_to(self, status: bool):
         self.is_search = status
         await self.save(update_fields=["is_search"])
+
+    async def get_trigger_collections(self) -> list['TriggerCollection']:
+        # todo 7/12/2022 2:46 PM taima: Сделать связанный запрос в базу
+        await self.fetch_related("accounts__trigger_collection__account")
+        trigger_collections = []
+        for account in self.accounts:
+            trigger_collections.append(account.trigger_collection)
+        return trigger_collections
 
     @classmethod
     async def create(cls: typing.Type[MODEL], using_db=False, **kwargs) -> MODEL:

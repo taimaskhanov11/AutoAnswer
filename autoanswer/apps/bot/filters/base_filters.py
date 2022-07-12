@@ -1,12 +1,12 @@
 from aiogram import types
 from aiogram.dispatcher.filters import BaseFilter
+from loguru import logger
 
 from autoanswer.apps.bot.markups.common import common_markups
 from autoanswer.apps.bot.temp import SUBSCRIPTION_CHANNELS
 from autoanswer.apps.bot.utils import channel_status_check
 from autoanswer.db.models import User
 from autoanswer.loader import _
-from loguru import logger
 
 
 class UserFilter(BaseFilter):
@@ -25,7 +25,7 @@ class UserFilter(BaseFilter):
             logger.info(f"Новый пользователь {user=}")
 
         return {"user": user}
-    
+
 
 class ChannelSubscriptionFilter(BaseFilter):
     async def __call__(self, message: types.Message | types.CallbackQuery, user: User) -> bool:

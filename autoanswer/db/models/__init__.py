@@ -1,7 +1,9 @@
-from .user import User, Channel
+from .account import Account
 from .invoice import InvoiceCrypto, InvoiceQiwi
 from .subscription import SubscriptionTemplate, Subscription
-from .account import Account
+from .trigger import Trigger, TriggerCollection
+from .user import User, Channel
+
 __all__ = (
     "User",
     "Channel",
@@ -10,4 +12,6 @@ __all__ = (
     "Subscription",
     "InvoiceCrypto",
     "InvoiceQiwi",
+    "Trigger",
+    "TriggerCollection"
 )

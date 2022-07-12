@@ -1,6 +1,6 @@
 import datetime
 
-from aiogram import Dispatcher, Router, types, F
+from aiogram import Router, types, F
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.dispatcher.fsm.state import StatesGroup, State
 from loguru import logger
