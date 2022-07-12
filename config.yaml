@@ -1,9 +1,20 @@
 bot:
   token: your_token
   admins:
+    - 269019356
 db:
   user: postgres
   password: postgres
   database: autoanswer
   host: localhost
   port: 5432
+
+payment:
+  cryptocloud:
+    create_url: https://cryptocloud.pro/api/v2/invoice/create
+    status_url: https://cryptocloud.plus/api/v2/invoice/status
+    shop_id: your_shop_id
+    api_key: your_api_key
+
+  qiwi:
+    token: your_token
