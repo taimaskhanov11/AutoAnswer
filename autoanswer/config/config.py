@@ -52,8 +52,8 @@ class Database(BaseModel):
     user: str
     password: str
     database: str
-    host: str
-    port: int
+    host: str = "localhost"
+    port: int = 5432
 
     @property
     def postgres_url(self):

@@ -65,7 +65,7 @@ async def switch_trigger_collection_status(
     await state.clear()
     trigger_coll = await TriggerCollection.get_local_or_full(pk=callback_data.pk)
     await trigger_coll.switch_status(callback_data.payload)
-    await call.message.edit_text(trigger_coll.prettify)
+    # await call.message.edit_text(trigger_coll.prettify)
     await call.message.edit_reply_markup(triggers_markups.switch_trigger_collection_status(trigger_coll))
 
 
