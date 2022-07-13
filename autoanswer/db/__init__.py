@@ -15,7 +15,6 @@ MODELS_DIR = "autoanswer.db.models"
 
 async def init_db(db: Database = config.db):
     logger.debug(f"Initializing Database {db.database}[{db.host}]...")
-    print(MODELS_DIR)
     data = {
         "db_url": db.postgres_url,
         "modules": {"models": [MODELS_DIR]},
