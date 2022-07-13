@@ -71,6 +71,12 @@ def switch_trigger_collection_status(trigger_collection: TriggerCollection) -> I
 
     builder.button(text="📝 Создать новый автоответ",
                    callback_data=TriggerCallback(pk=tc.pk, action=Action.create))
+
+    builder.button(text="Изменить текст ответа на все сообщения",
+                   callback_data=TriggerCollectionCallback(
+                       pk=tc.pk,
+                       action=TriggerCollectionAction.edit_answer_to_all_messages).pack())
+
     builder.button(text="Изменить данные",
                    callback_data=TriggerCollectionCallback(pk=tc.pk, action=Action.edit)),
     # builder.button(text="Удалить ответ",
@@ -79,7 +85,7 @@ def switch_trigger_collection_status(trigger_collection: TriggerCollection) -> I
                    callback_data=AccountCallback(pk=tc.account_id, action=AccountAction.unbind)),
     builder.adjust(1)
     builder.button(text="⬅️ Назад", callback_data="start")
-    builder.adjust(1, 1, 2, 1, 1, 1)
+    builder.adjust(1, 1, 2, 1, 1, 1, 1)
     return builder.as_markup()
 
 
