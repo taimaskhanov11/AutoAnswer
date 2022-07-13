@@ -42,6 +42,7 @@ class TriggerCallback(CallbackData, prefix="trigger"):
 class TriggerCollectionAction(str, Enum):
     switch = "switch"
     edit_answer_to_all_messages = "edit_answer_to_all_messages"
+    edit_delay_before_answer = "edit_delay_before_answer"
 
 
 class TriggerCollectionCallback(CallbackData, prefix="trigger_collection"):

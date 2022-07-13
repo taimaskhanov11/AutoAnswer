@@ -10,9 +10,10 @@ from autoanswer.apps.bot.middleware.bot_middleware import BotMiddleware
 from autoanswer.apps.bot.utils import start_up_message
 from autoanswer.apps.bot.utils.purchase import checking_purchases
 from autoanswer.apps.controller.controller import init_controllers
-from autoanswer.config.config import config
+from autoanswer.config.config import config, load_yaml
 from autoanswer.config.logg_settings_new import init_logging
 from autoanswer.db import init_db
+from autoanswer.db.models import Subscription, SubscriptionTemplate
 from autoanswer.db.utils.backup import making_backup
 from autoanswer.loader import bot, dp, scheduler
 
@@ -37,7 +38,10 @@ async def start():
     # dp.shutdown.register(on_shutdown)
 
     # Установка команд бота
-    config.bot.id = (await bot.get_me()).id
+    bot_info = await bot.get_me()
+    config.bot.id = bot_info.id
+    config.bot.username = bot_info.username
+
     await set_commands(bot)
     dp.message.filter(F.chat.type == "private")
     # Инициализация бд
@@ -62,6 +66,10 @@ async def start():
     # Инициализация контроллеров
     await init_controllers()
 
+    # Обновление подписок
+    await SubscriptionTemplate.refresh_subscription_templates(load_yaml("subscriptions.yaml"))
+
+    scheduler.add_job(Subscription.decreased_duration, "cron", hour=0, minute=0)
     scheduler.add_job(making_backup, "interval", hours=1)
     scheduler.add_job(
         checking_purchases,

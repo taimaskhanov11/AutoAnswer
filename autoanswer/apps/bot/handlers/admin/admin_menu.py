@@ -31,7 +31,7 @@ async def export_users(call: types.CallbackQuery | types.Message, state: FSMCont
                               f"3.first_name\n"
                               f"4.last_name\n"
                               f"0.Все поля\n"
-                              f"Отправьте комбинацию нужных полей", reply_markup=admin_markups.back())
+                              f"Отправьте комбинацию нужных полей", "html", reply_markup=admin_markups.back())
     await state.set_state(ExportUsers.choice_send_type)
 
 

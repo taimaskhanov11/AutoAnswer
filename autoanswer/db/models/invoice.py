@@ -6,8 +6,9 @@ from loguru import logger
 from tortoise import models, fields
 from tortoise.transactions import atomic
 
-from autoanswer.config.config import QIWI_CLIENT, TZ, config
+from autoanswer.config.config import TZ, config
 from .subscription import SubscriptionTemplate
+from ...apps.bot.utils.yookassa import YooPayment
 
 if typing.TYPE_CHECKING:
     from .user import User
@@ -144,7 +145,7 @@ class InvoiceQiwi(InvoiceAbstract):
     comment = fields.CharField(255, null=True)
 
     async def check_payment(self) -> bool:
-        status = await QIWI_CLIENT.get_bill_status(self.invoice_id)
+        status = await config.payment.qiwi.get_bill_status(self.invoice_id)
         if status == "PAID":
             return True
         return False
@@ -158,8 +159,8 @@ class InvoiceQiwi(InvoiceAbstract):
                              comment: str = None,
                              email: str = None,
                              lifetime: int = 30, ) -> "InvoiceQiwi":
-        async with QIWI_CLIENT:
-            bill = await QIWI_CLIENT.create_p2p_bill(
+        async with config.payment.qiwi:
+            bill = await config.payment.qiwi.create_p2p_bill(
                 amount=amount,
                 comment=comment,
                 expire_at=datetime.datetime.now(TZ) + datetime.timedelta(minutes=lifetime),
@@ -171,3 +172,45 @@ class InvoiceQiwi(InvoiceAbstract):
                                     amount=bill.amount.value,
                                     invoice_id=bill.id,
                                     email=email, )
+
+
+class InvoiceYooKassa(InvoiceAbstract):
+    """
+        {'id': '2a60ca77-000f-5000-a000-16cf4119f15e', 'status': 'pending', 'amount': {'value': '1.00',
+                                                                                       'currency': 'RUB'},
+        'description': 'Текстовый', 'recipient': {'account_id': '878719', 'gateway_id': '1934486'},
+        'created_at': '2022-07-13T12:12:39.501Z',
+        'confirmation': {'type': 'redirect',
+                         'confirmation_url': 'https://yoomoney.ru/checkout/payments/v2/contract?orderId=2a60ca77-000f-5000-a000-16cf4119f15e'},
+        'test': False, 'paid': False, 'refundable': False, 'metadata': {}}
+    """
+    user: "User" = fields.ForeignKeyField("models.User", on_delete=fields.CASCADE, related_name="invoice_yookassas")
+    comment = fields.CharField(255, null=True)
+
+    async def check_payment(self) -> bool:
+        yoo_payment = await YooPayment.get(self.invoice_id)
+        if yoo_payment.paid:
+            return True
+        return False
+
+    # todo 5/22/2022 3:46 PM taima: сделать для других валют
+    @classmethod
+    async def create_invoice(cls,
+                             user: "User",
+                             subscription_template: SubscriptionTemplate,
+                             amount: int | float | str,
+                             comment: str = None,
+                             email: str = None,
+                             lifetime: int = 30, ) -> "InvoiceYooKassa":
+        yoo_payment = await YooPayment.create_payment(
+            description=comment,
+            amount=amount,
+        )
+        logger.debug(f"InvoiceYooKassa created [{user}][{yoo_payment.id}] {yoo_payment.confirmation.confirmation_url}")
+        return await cls.create(user=user,
+                                subscription_template=subscription_template,
+                                amount=yoo_payment.amount.value,
+                                comment=comment,
+                                invoice_id=yoo_payment.id,
+                                pay_url=yoo_payment.confirmation.confirmation_url,
+                                email=email)

@@ -32,7 +32,8 @@ def subscription_purchase():
     builder = InlineKeyboardBuilder()
 
     builder.button(text=_("₿ Оплата криптовалютой"), callback_data="crypto")
-    builder.button(text=_("🥝 Оплата через QIWI"), callback_data="qiwi")
+    # builder.button(text=_("🥝 Оплата через QIWI"), callback_data="qiwi")
+    builder.button(text=_("Оплата через YooKassa"), callback_data="yookassa")
     builder.button(text=_("⬅️ Назад"), callback_data="purchase")
     builder.adjust(1)
     return builder.as_markup()

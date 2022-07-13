@@ -9,7 +9,7 @@ from loguru import logger
 
 from autoanswer.apps.bot.callback_data.base_callback import AccountCallback, AccountAction
 from autoanswer.apps.bot.markups.admin import admin_markups
-from autoanswer.apps.bot.markups.common import common_markups
+from autoanswer.apps.bot.markups.common import common_markups, accounts_markups
 from autoanswer.apps.bot.temp import controller_codes_queue
 from autoanswer.apps.controller.controller import ConnectAccountController
 from autoanswer.db.models import User, Account
@@ -24,14 +24,19 @@ class ConnectAccount(StatesGroup):
 
 
 class UnlinkAccount(StatesGroup):
-    unlink = State()
+    unbind = State()
 
 
-link = md.hlink("ссылке", "https://my.telegram.org/auth?to=apps ")
+link = md.link("ссылке", "https://my.telegram.org/auth?to=apps ")
 
 
-async def connect_account(call: types.CallbackQuery, state: FSMContext):
+async def connect_account(call: types.CallbackQuery, user: User, state: FSMContext):
     await state.clear()
+    await user.fetch_related("accounts")
+    if len(user.accounts) >= 3:
+        await call.message.answer(_("Вы не можете подключить более 3 аккаунтов"))
+        return
+    
     await call.message.answer(_(
         f"▫️ Для подключения аккаунта перейдите по 👉🏻 {link}\n\n"
         "▫️ Введите данные аккаунта (номер телефона и затем код) \n\n"
@@ -66,8 +71,8 @@ async def connect_account_phone(message: types.Message, user: User, state: FSMCo
         asyncio.create_task(controller.start())
         await state.set_state(ConnectAccount.code)
         await message.answer(_("Введите код подтверждения из сообщения Телеграмм с префиксом code, "
-                               f"в только таком виде: {md.hcode('code<ваш код>')}.\n"
-                               f"Например: {md.hcode('code43123')}\n"
+                               f"в только таком виде: {md.code('code<ваш код>')}.\n"
+                               f"Например: {md.code('code43123')}\n"
                                "Если отправить просто цифры то тг обнулит код\n"))
     except Exception as e:
         logger.critical(e)
@@ -80,7 +85,7 @@ async def connect_account_code(message: types.Message, user: User, state: FSMCon
         await message.answer(_(f"❌ Неправильный ввод код.\n"
                                f"Пожалуйста повторите попытку создания с первого этапа и введите "
                                f"код с префиксом code как указано в примере ниже\n"
-                               f"Например: {md.hcode('code43123')}"),
+                               f"Например: {md.code('code43123')}"),
                              reply_markup=admin_markups.back())
         await state.clear()
         return
@@ -89,6 +94,34 @@ async def connect_account_code(message: types.Message, user: User, state: FSMCon
     queue.put_nowait(code)
     await message.answer(
         _("Код получен, ожидайте завершения\nЕсли все прошло успешно Вам придет сообщение в личный чат."))
+    await state.clear()
+
+
+async def unbind_account(
+        call: types.CallbackQuery,
+        callback_data: AccountCallback,
+        user: User,
+        state: FSMContext):
+    await state.update_data(account_pk=callback_data.pk)
+    await call.message.answer("Вы действительно хотите отключить аккаунт?",
+                              reply_markup=accounts_markups.unbind_account())
+    await state.set_state(UnlinkAccount.unbind)
+
+
+async def unbind_account_done(
+        call: types.CallbackQuery,
+        user: User,
+        state: FSMContext):
+    if call.data == "yes":
+        data = await state.get_data()
+        account = await Account.get_or_none(pk=data["account_pk"])
+        if account:
+            await account.delete()
+            await call.message.answer(_("Аккаунт успешно отключен"))
+        else:
+            await call.message.answer(_("Аккаунт не найден"))
+    else:
+        await call.message.answer("Удаление отменено")
     await state.clear()
 
 
@@ -101,3 +134,6 @@ def register_connect_account(dp: Router):
     callback(connect_account, AccountCallback.filter(F.action == AccountAction.bind))
     message(connect_account_phone, state=ConnectAccount.api)
     message(connect_account_code, state=ConnectAccount.code)
+
+    callback(unbind_account, AccountCallback.filter(F.action == AccountAction.unbind))
+    callback(unbind_account_done, state=UnlinkAccount.unbind)

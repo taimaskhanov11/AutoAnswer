@@ -7,6 +7,7 @@ from autoanswer.apps.bot.callback_data.base_callback import TriggerCollectionCal
     Action
 from autoanswer.apps.bot.markups.common import triggers_markups
 from autoanswer.apps.bot.utils import part_sending
+from autoanswer.apps.bot.utils.message import check_for_file
 from autoanswer.db.models import User
 from autoanswer.db.models.trigger import TriggerCollection
 
@@ -14,6 +15,10 @@ router = Router()
 
 
 class EditTriggerCollectionAnswer(StatesGroup):
+    edit = State()
+
+
+class EditTriggerCollectionDelay(StatesGroup):
     edit = State()
 
 
@@ -32,7 +37,7 @@ async def get_trigger_collections(
     if not triggers_coll:
         await call.message.answer("У вас нет ни одной коллекции ответов")
         return
-    await call.message.answer("Текущая подключенный аккаунты:",
+    await call.message.answer("Текущие подключенные аккаунты:",
                               reply_markup=triggers_markups.get_trigger_collections(triggers_coll))
 
 
@@ -42,8 +47,8 @@ async def get_trigger_collection(
         state: FSMContext,
         user: User):
     await state.clear()
-    trigger_collection = await TriggerCollection.get_from_local_or_full(pk=callback_data.pk)
-    await part_sending(call.message, str(trigger_collection),
+    trigger_collection = await TriggerCollection.get_local_or_full(pk=callback_data.pk)
+    await part_sending(call.message, trigger_collection.prettify,
                        reply_markup=triggers_markups.switch_trigger_collection_status(trigger_collection))
 
     # await call.message.answer(
@@ -58,11 +63,9 @@ async def switch_trigger_collection_status(
         user: User,
         callback_data: TriggerCollectionCallback):
     await state.clear()
-    # trigger_coll = await TriggerCollection.get(id=callback_data.pk).prefetch_related("triggers")
-    trigger_coll = await TriggerCollection.get_from_local_or_full(pk=callback_data.pk)
+    trigger_coll = await TriggerCollection.get_local_or_full(pk=callback_data.pk)
     await trigger_coll.switch_status(callback_data.payload)
-
-    await call.message.edit_text(f"{trigger_coll}")
+    await call.message.edit_text(trigger_coll.prettify)
     await call.message.edit_reply_markup(triggers_markups.switch_trigger_collection_status(trigger_coll))
 
 
@@ -70,21 +73,16 @@ async def edit_trigger_collection(call: types.CallbackQuery,
                                   state: FSMContext,
                                   callback_data: TriggerCollectionCallback):
     await state.clear()
-    # trigger_coll = await TriggerCollection.get(id=callback_data.pk).select_related("triggers")
-    trigger_coll = await TriggerCollection.get_from_local_or_full(pk=callback_data.pk)
-    triggers_str = ""
-    for num, value in enumerate(trigger_coll.triggers, 1):
-        p_num = md.hcode(f'# {num}')
-        triggers_str += f"{p_num}\n{value}\n\n"
-
-    await call.message.answer(
-        "✏️ Для изменения введите выберите номер автоответа\n\n"
-        f"{triggers_str}\n"
-        f"{md.hbold('Текст ответа на все сообщения: ')}\n"
-        f"{md.hcode(trigger_coll.answer_to_all_messages)}\n"
-        ,
-        reply_markup=triggers_markups.edit_trigger_collection(trigger_coll),
-    )
+    trigger_coll = await TriggerCollection.get_local_or_full(pk=callback_data.pk)
+    await call.message.edit_reply_markup(triggers_markups.edit_trigger_collection(trigger_coll))
+    # await call.message.answer(
+    #     "✏️ Для изменения введите выберите номер автоответа\n\n"
+    #     f"{trigger_coll.triggers_prettify}\n"
+    #     f"{md.bold('Текст ответа на все сообщения: ')}\n"
+    #     f"{md.code(trigger_coll.answer_to_all_messages)}\n"
+    #     ,
+    #     reply_markup=triggers_markups.edit_trigger_collection(trigger_coll),
+    # )
 
 
 async def edit_trigger_collection_answer(
@@ -93,25 +91,68 @@ async def edit_trigger_collection_answer(
         callback_data: TriggerCollectionCallback):
     await state.clear()
     await state.update_data(trigger_collection_answer_pk=callback_data.pk)
-    await call.message.answer("Введите тест сообщения", reply_markup=types.ReplyKeyboardRemove())
+    await call.message.answer("Отправьте ответ на все сообщения.\n"
+                              "Ответом может быть текст, голосовое или любой другой файл.\n"
+                              "Вы можете прикрепить сообщение к файлу.\n"
+                              "Вы можете стилизовать сообщение с помощью следующих атрибутов атрибутов:\n"
+                              f"<жир>текст</жир> - {md.bold('жирный')}\n"
+                              f"<кур>текст</кур> - {md.italic('курсив')}\n"
+                              # f"<под>текст</под> - {md.underline('подчеркнутый')}\n"
+                              f"<пер>текст</пер> - {md.strikethrough('перечеркнутый')}\n"
+                              f"<код>текст</код> - {md.code('код')}\n\n"
+                              f"<скр>текст</скр> - Скрытый текст\n\n"
+                              "Пример:\n Сам ты <жир>Жирный</жир>\n"
+                              f"Результат: Сам ты {md.bold('Жирный')}\n\n",
+                              reply_markup=types.ReplyKeyboardRemove())
+
     await state.set_state(EditTriggerCollectionAnswer.edit)
 
 
 async def edit_trigger_collection_answer_done(
         message: types.Message,
         state: FSMContext):
+    answer, file_name = await check_for_file(message)
     data = await state.get_data()
-    # trigger_coll = await TriggerCollection.get(id=data["trigger_collection_answer_pk"]).prefetch_related("triggers")
-    trigger_coll = await TriggerCollection.get_from_local_or_full(pk=data["trigger_collection_answer_pk"])
-    await trigger_coll.set_answer(answer=message.text)
+    pk = data.get('trigger_collection_answer_pk')
+    trigger_coll = await TriggerCollection.get_local_or_full(pk)
+
+    trigger_coll.answer_to_all_messages = answer
+    trigger_coll.file_name = file_name
+    await trigger_coll.save(update_fields=['answer_to_all_messages', 'file_name'])
+
     await state.clear()
     await message.answer("Ответ успешно изменен ✅\n\n"
-                         f"{trigger_coll}",
+                         f"{trigger_coll.prettify}",
+                         reply_markup=triggers_markups.switch_trigger_collection_status(trigger_coll))
+
+
+async def edit_trigger_collection_delay(
+        call: types.CallbackQuery,
+        state: FSMContext,
+        callback_data: TriggerCollectionCallback):
+    await state.clear()
+    await state.update_data(trigger_collection_answer_pk=callback_data.pk)
+    await call.message.answer("Отправьте задержку в секундах.\n",
+                              reply_markup=types.ReplyKeyboardRemove())
+
+    await state.set_state(EditTriggerCollectionDelay.edit)
+
+
+async def edit_trigger_collection_delay_done(
+        message: types.Message,
+        state: FSMContext, ):
+    data = await state.get_data()
+    pk = data.get('trigger_collection_answer_pk')
+    trigger_coll = await TriggerCollection.get_local_or_full(pk)
+    trigger_coll.delay_before_answer = message.text
+    await trigger_coll.set_delay_before_answer(message.text)
+    await state.clear()
+    await message.answer("Задержка успешно изменена ✅\n\n"
+                         f"{trigger_coll.prettify}",
                          reply_markup=triggers_markups.switch_trigger_collection_status(trigger_coll))
 
 
 def register_trigger_menu(dp: Router):
-
     dp.include_router(router)
 
     callback = router.callback_query.register
@@ -139,3 +180,8 @@ def register_trigger_menu(dp: Router):
              TriggerCollectionCallback.filter(F.action == TriggerCollectionAction.edit_answer_to_all_messages),
              state="*")
     message(edit_trigger_collection_answer_done, state=EditTriggerCollectionAnswer.edit)
+
+    callback(edit_trigger_collection_delay,
+             TriggerCollectionCallback.filter(F.action == TriggerCollectionAction.edit_delay_before_answer),
+             state="*")
+    message(edit_trigger_collection_delay_done, state=EditTriggerCollectionDelay.edit)

@@ -3,16 +3,17 @@ import datetime
 from loguru import logger
 
 from autoanswer.config.config import TZ
-from autoanswer.db.models.invoice import InvoiceCrypto, InvoiceQiwi
+from autoanswer.db.models.invoice import InvoiceCrypto, InvoiceQiwi, InvoiceYooKassa
 from autoanswer.loader import bot, _
 
 
 async def checking_purchases():
     logger.trace("Checking purchases")
-    for cls in [InvoiceCrypto, InvoiceQiwi]:
+    for cls in [InvoiceCrypto, InvoiceQiwi, InvoiceYooKassa]:
         logger.trace(f"Check cls {cls.__name__}")
-        invoices: list[InvoiceCrypto | InvoiceQiwi] = await cls.filter(expire_at__gte=datetime.datetime.now(TZ),
-                                                                       is_paid=False)
+        invoices: list[InvoiceCrypto | InvoiceQiwi, InvoiceYooKassa] = await cls.filter(
+            expire_at__gte=datetime.datetime.now(TZ),
+            is_paid=False)
         for invoice in invoices:
             logger.trace(f"Check invoice {invoice.invoice_id}[{invoice.amount}]")
             try:
@@ -24,5 +25,4 @@ async def checking_purchases():
                     await bot.send_message(invoice.user.user_id,
                                            _("✅ Подписка {} успешно оплачена").format(invoice.subscription_template))
             except Exception as e:
-                raise e
                 logger.warning(e)

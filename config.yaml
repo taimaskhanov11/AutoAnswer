@@ -16,5 +16,10 @@ payment:
     shop_id: your_shop_id
     api_key: your_api_key
 
-  qiwi:
-    token: your_token
+  #  qiwi:
+  #    token: your_token
+
+  yookassa:
+    create_url: https://api.yookassa.ru/v3/payments
+    shop_id: your_shop_id
+    api_key: your_api_key

@@ -23,3 +23,10 @@ def view_account(account: Account) -> InlineKeyboardMarkup:
         callback_data=AccountCallback(pk=account.pk, action=Action.delete)
     )
     return builder.as_markup()
+
+
+def unbind_account() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅Да", callback_data="yes")
+    builder.button(text="🚫 Нет", callback_data="no")
+    return builder.as_markup()

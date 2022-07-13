@@ -20,11 +20,19 @@ async def profile(message: types.Message, user: User, state: FSMContext):
     # todo 7/10/2022 11:06 PM taima: Поправить профиль
     await state.clear()
     await message.answer(
-        f"{md.hbold('🔑 ID')}: {md.hcode(user.user_id)}\n"
-        f"{md.hbold('👤 Username')}: @{md.hcode(user.username)}\n"
-        f"{md.hbold('💵 Подписка')} - {md.hitalic(user.subscription.title)}\n"
-        f"🕜 Осталось дней до завершения до завершения подписки - {md.hcode(user.subscription.duration)}.\n",
+        f"{md.bold('🔑 ID')}: {md.code(user.user_id)}\n"
+        f"{md.bold('👤 Username')}: @{md.code(user.username)}\n"
+        f"{md.bold('💵 Подписка')} - {md.italic(user.subscription.title)}\n"
+        f"🕜 Осталось дней до завершения до завершения подписки - {md.code(user.subscription.duration)}.\n",
     )
+
+
+async def description(message: types.Message, state: FSMContext):
+    await message.answer("Описание")
+
+
+async def support(message: types.Message, state: FSMContext):
+    await message.answer("Поддержка")
 
 
 def register_common(dp: router):
@@ -36,3 +44,5 @@ def register_common(dp: router):
     message(start, commands="start", state="*")
     callback(start, text="start", state="*")
     message(profile, text_startswith="👤", state="*")
+    message(description, text_startswith="📄", state="*")
+    message(support, text_startswith="🙋‍♂", state="*")

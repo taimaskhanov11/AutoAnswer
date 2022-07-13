@@ -11,7 +11,7 @@ def get_trigger_menu() -> InlineKeyboardMarkup:
     keyword = [
         ("👥Текущие аккаунты", TriggerCollectionCallback(action=Action.all)),
         ("➕👤 Привязать аккаунт", AccountCallback(action=AccountAction.bind)),
-        ("➖👤 Отвязать аккаунт", AccountCallback(action=AccountAction.unbind)),
+        # ("➖👤 Отвязать аккаунт", AccountCallback(action=AccountAction.unbind)),
     ]
     for text, callback_data in keyword:
         builder.button(text=text, callback_data=callback_data)
@@ -75,8 +75,11 @@ def switch_trigger_collection_status(trigger_collection: TriggerCollection) -> I
                    callback_data=TriggerCollectionCallback(pk=tc.pk, action=Action.edit)),
     # builder.button(text="Удалить ответ",
     #                callback_data=TriggerCollectionCallback(pk=tc.pk, action=Action.delete)),
-    builder.button(text="⬅️ Назад", callback_data="start")
+    builder.button(text="Отвязать аккаунт",
+                   callback_data=AccountCallback(pk=tc.account_id, action=AccountAction.unbind)),
     builder.adjust(1)
+    builder.button(text="⬅️ Назад", callback_data="start")
+    builder.adjust(1, 1, 2, 1, 1, 1)
     return builder.as_markup()
 
 
@@ -90,11 +93,18 @@ def edit_trigger_collection(trigger_col: TriggerCollection) -> InlineKeyboardMar
                               callback_data=TriggerCollectionCallback(
                                   pk=trigger_col.pk,
                                   action=TriggerCollectionAction.edit_answer_to_all_messages).pack())
-    k2 = InlineKeyboardButton(text="⬅️ Назад",
+
+    k2 = InlineKeyboardButton(text="Изменить задержку перед ответом",
+                              callback_data=TriggerCollectionCallback(
+                                  pk=trigger_col.pk,
+                                  action=TriggerCollectionAction.edit_delay_before_answer).pack())
+
+    k3 = InlineKeyboardButton(text="⬅️ Назад",
                               callback_data=TriggerCollectionCallback(
                                   pk=trigger_col.pk, action=Action.view).pack())
     builder.row(k1)
     builder.row(k2)
+    builder.row(k3)
 
     # builder.button(text="Изменить текст ответа на все сообщения",
     #                callback_data=TriggerCollectionCallback(
@@ -116,6 +126,6 @@ def get_trigger(trigger: Trigger) -> InlineKeyboardMarkup:
 
     builder.button(text="Удалить ответ", callback_data=TriggerCallback(pk=trigger.pk, action=Action.delete))
     builder.button(text="⬅️ Назад",
-                   callback_data=TriggerCollectionCallback(pk=trigger.trigger_collection.pk, action=Action.view))
+                   callback_data=TriggerCollectionCallback(pk=trigger.trigger_collection_id, action=Action.view))
     builder.adjust(1)
     return builder.as_markup()

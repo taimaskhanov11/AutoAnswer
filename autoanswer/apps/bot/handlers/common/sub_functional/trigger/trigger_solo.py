@@ -1,13 +1,12 @@
 from aiogram import Router, types, F
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.dispatcher.fsm.state import StatesGroup, State
-from loguru import logger
+from aiogram.utils import markdown as md
 
 from autoanswer.apps.bot.callback_data.base_callback import TriggerCallback, Action, TriggerAction
 from autoanswer.apps.bot.markups.common import triggers_markups
-from autoanswer.config.config import MEDIA_DIR
+from autoanswer.apps.bot.utils.message import check_for_file
 from autoanswer.db.models.trigger import Trigger, TriggerCollection
-from autoanswer.loader import bot
 
 router = Router()
 
@@ -22,48 +21,22 @@ class EditTriggerPhrases(StatesGroup):
     answer = State()
 
 
-async def check_for_file(message: types.Message):
-    file = None
-    file_name = None
-    default_file_name = "some_file.png"
-    answer = message.text
-    logger.warning(message)
-    if message.photo:
-        file = message.photo[-1]
-    elif message.audio:
-        file = message.audio
-    elif message.document:
-        file = message.document
-    elif message.video:
-        file = message.video
-    elif message.voice:
-        file = message.voice
-        default_file_name = "audio.ogg"
-
-    if file:
-        answer = message.caption
-        file_id = getattr(file, "file_id")
-        file_name = getattr(file, "file_name", default_file_name)
-        await bot.download(file_id, MEDIA_DIR / file_name)
-    return answer, file_name
-
-
 async def get_trigger(call: types.CallbackQuery,
                       state: FSMContext,
                       callback_data: TriggerCallback):
     await state.clear()
-    trigger = await Trigger.get(id=callback_data.pk)
+    trigger = await Trigger.get_full(pk=callback_data.pk)
     await call.message.answer(
-        f"{trigger}",
+        trigger.prettify,
         reply_markup=triggers_markups.get_trigger(trigger),
     )
 
 
 async def delete_trigger(call: types.CallbackQuery,
                          callback_data: TriggerCallback):
-    trigger = await Trigger.get(id=callback_data.pk).select_related("trigger_collection")
-    await TriggerCollection.refresh_if_local(pk=trigger.trigger_collection.pk)
+    trigger = await Trigger.get_local_or_full(pk=callback_data.pk)
     await trigger.delete()
+    await TriggerCollection.refresh_local_to_new(pk=trigger.trigger_collection_id)
     await call.message.answer("Триггер удален ✅")
 
 
@@ -71,7 +44,7 @@ async def create_trigger(call: types.CallbackQuery,
                          callback_data: TriggerCallback,
                          state: FSMContext):
     await state.clear()
-    await state.update_data(trigger_pk=callback_data.pk)
+    await state.update_data(trigger_coll_pk=callback_data.pk)
     await call.message.answer("Введите фразы для ответа через запятую",
                               reply_markup=types.ReplyKeyboardRemove())
     await state.set_state(CreateTrigger.phrases)
@@ -81,9 +54,18 @@ async def create_trigger_phrases(message: types.Message,
                                  state: FSMContext):
     phrases = Trigger.fix_phrases(message.text)
     await state.update_data(phrases=phrases)
-    await message.answer("Отправьте ответ.\n"
-                         "Ответом может быть текст, голосовое или любой другой файл."
-                         "(Вы можете прикрепить сообщение к файлу)",
+    await message.answer("Отправьте ответ на все сообщения.\n"
+                         "Ответом может быть текст, голосовое или любой другой файл.\n"
+                         "Вы можете прикрепить сообщение к файлу.\n"
+                         "Вы можете стилизовать сообщение с помощью следующих атрибутов атрибутов:\n"
+                         f"<жир>текст</жир> - {md.bold('жирный')}\n"
+                         f"<кур>текст</кур> - {md.italic('курсив')}\n"
+                         # f"<под>текст</под> - {md.underline('подчеркнутый')}\n"
+                         f"<пер>текст</пер> - {md.strikethrough('перечеркнутый')}\n"
+                         f"<код>текст</код> - {md.code('код')}\n\n"
+                         f"<скр>текст</скр> - Скрытый текст\n\n"
+                         "Пример:\n Сам ты <жир>Жирный</жир>\n"
+                         f"Результат: Сам ты {md.bold('Жирный')}\n\n",
                          reply_markup=types.ReplyKeyboardRemove())
     await state.set_state(CreateTrigger.answer)
 
@@ -91,18 +73,25 @@ async def create_trigger_phrases(message: types.Message,
 async def create_trigger_answer(message: types.Message,
                                 state: FSMContext):
     # todo 7/12/2022 7:01 PM taima: Проверить на размер файла
-    answer, file_name = await check_for_file(message)
-    data = await state.get_data()
-    phrases = data["phrases"]
-    trigger_coll = await TriggerCollection.get_from_local_or_full(pk=data["trigger_pk"])
-    trigger = await Trigger.create(phrases=phrases,
-                                   answer=answer,
-                                   file_name=file_name,
-                                   trigger_collection=trigger_coll)
+    try:
+        answer, file_name = await check_for_file(message)
 
-    await TriggerCollection.refresh_if_local(trigger_coll.pk)
-    await message.answer("Триггер создан ✅\n\n{}".format(trigger),
-                         reply_markup=triggers_markups.get_trigger(trigger), )
+        data = await state.get_data()
+        phrases = data["phrases"]
+        trigger_coll_pk = data["trigger_coll_pk"]
+
+        trigger_coll = await TriggerCollection.get_local_or_full(pk=trigger_coll_pk)
+        trigger = await Trigger.create(phrases=phrases,
+                                       answer=answer,
+                                       file_name=file_name,
+                                       trigger_collection=trigger_coll)
+
+        await TriggerCollection.refresh_local_to_new(trigger_coll.pk)
+        await message.answer(f"Триггер создан ✅\n\n{trigger.prettify}", "markdown",
+                             reply_markup=triggers_markups.get_trigger(trigger), )
+        await state.clear()
+    except Exception as e:
+        print(e)
 
 
 async def edit_trigger_phrases(call: types.CallbackQuery,
@@ -118,12 +107,11 @@ async def edit_trigger_phrases(call: types.CallbackQuery,
 async def edit_trigger_phrases_done(message: types.Message,
                                     state: FSMContext):
     data = await state.get_data()
-    trigger = await Trigger.get(id=data["trigger_pk"]).select_related("trigger_collection")
+    pk = data["trigger_pk"]
+    trigger = await Trigger.get_local_or_full(pk=pk)
     await trigger.set_phrases(message.text)
-    await TriggerCollection.refresh_if_local(pk=trigger.trigger_collection.pk)
-
     await message.answer(
-        f"{trigger}",
+        trigger.prettify,
         reply_markup=triggers_markups.get_trigger(trigger),
     )
     await state.clear()
@@ -135,24 +123,34 @@ async def edit_trigger_answer(call: types.CallbackQuery,
                               callback_data: TriggerCallback):
     await state.clear()
     await state.update_data(trigger_pk=callback_data.pk)
-    await call.message.answer("Введите текст ответа",
+    await call.message.answer("Отправьте ответ на все сообщения.\n"
+                              "Ответом может быть текст, голосовое или любой другой файл.\n"
+                              "Вы можете прикрепить сообщение к файлу.\n"
+                              "Вы можете стилизовать сообщение с помощью следующих атрибутов атрибутов:\n"
+                              f"<жир>текст</жир> - {md.bold('жирный')}\n"
+                              f"<кур>текст</кур> - {md.italic('курсив')}\n"
+                              # f"<под>текст</под> - {md.underline('подчеркнутый')}\n"
+                              f"<пер>текст</пер> - {md.strikethrough('перечеркнутый')}\n"
+                              f"<код>текст</код> - {md.code('код')}\n\n"
+                              f"<скр>текст</скр> - Скрытый текст\n\n"
+                              "Пример:\n Сам ты <жир>Жирный</жир>\n"
+                              f"Результат: Сам ты {md.bold('Жирный')}\n\n",
                               reply_markup=types.ReplyKeyboardRemove())
-    await state.set_state(EditTriggerPhrases.phrases)
+    await state.set_state(EditTriggerPhrases.answer)
 
 
 async def edit_trigger_answer_done(message: types.Message,
                                    state: FSMContext):
     answer, file_name = await check_for_file(message)
     data = await state.get_data()
-    trigger = await Trigger.get(id=data["trigger_pk"]).select_related("trigger_collection")
-
+    pk = data["trigger_pk"]
+    trigger = await Trigger.get_local_or_full(pk=pk)
     await trigger.set_answer(answer)
     if file_name:
         await trigger.set_file_name(file_name)
-    await TriggerCollection.refresh_if_local(pk=trigger.trigger_collection.pk)
 
     await message.answer(
-        f"{trigger}",
+        trigger.prettify,
         reply_markup=triggers_markups.get_trigger(trigger),
     )
 
@@ -161,7 +159,6 @@ async def edit_trigger_answer_done(message: types.Message,
 
 
 def register_trigger_solo(dp: Router):
-
     dp.include_router(router)
 
     callback = router.callback_query.register

@@ -1,11 +1,12 @@
 import typing
 from typing import List
 
+from loguru import logger
 from tortoise import models, fields
 from tortoise.functions import Sum
 
 if typing.TYPE_CHECKING:
-    from autoanswer.db.models.base import User
+    from autoanswer.db.models.user import User
 
 
 class AbstractSubscription(models.Model):
@@ -36,12 +37,29 @@ class SubscriptionTemplate(models.Model):
         else:
             return await SubscriptionTemplate.create(**data)
 
+    @classmethod
+    async def refresh_subscription_templates(cls, sub_data: list[dict]):
+        for s in await SubscriptionTemplate.all():
+            await s.delete()
+        await cls.create_from_dict(sub_data)
+        logger.info("Subscriptions refreshed")
+
 
 class Subscription(SubscriptionTemplate):
     """Подписки с привязкой к пользователю"""
     title = fields.CharField(255, default="Базовая подписка")
     connected_at = fields.DatetimeField(auto_now_add=True)
     user: "User" = fields.OneToOneField("models.User")
+
+    @classmethod
+    async def decreased_duration(cls):
+        """Reduce the subscription duration for all users by 1 day"""
+        logger.info("Reducing subscription duration")
+        for s in await cls.all():
+            if s.duration > 0:
+                s.duration -= 1
+                await s.save(update_fields=["duration"])
+        logger.info("Subscription duration reduced")
 
     @classmethod
     async def all_limits(cls) -> int:

@@ -7,7 +7,7 @@ from typing import Optional
 import yaml
 from glQiwiApi import QiwiP2PClient
 from loguru import logger
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel, BaseSettings, validator
 from pydantic.env_settings import InitSettingsSource, EnvSettingsSource, SecretsSettingsSource
 
 BASE_DIR = Path(__file__).parent.parent.parent
@@ -23,7 +23,7 @@ TZ = datetime.timezone(datetime.timedelta(hours=3))
 config_file = "config.yaml" if not os.getenv("DEBUG") else "config_dev.yaml"
 
 
-def load_yaml(file) -> dict:
+def load_yaml(file) -> dict | list:
     with open(Path(BASE_DIR, file), "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -43,6 +43,7 @@ def parse_config():
 
 class Bot(BaseModel):
     id: int | None
+    username: str | None
     token: str
     admins: Optional[list[int]]
 
@@ -68,11 +69,28 @@ class CryptoCloud(BaseModel):
 
 class Qiwi(BaseModel):
     token: str
+    client: QiwiP2PClient | None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    @validator('client', always=True)
+    def init_client(cls, v, values):
+        if v is None:
+            return QiwiP2PClient(values['token'])
+        return v
+
+
+class YooKassa(BaseModel):
+    shop_id: int | str
+    api_key: str
+    create_url: str
 
 
 class Payment(BaseModel):
     cryptocloud: CryptoCloud | None
     qiwi: Qiwi | None
+    yookassa: YooKassa | None
 
 
 class Config(BaseSettings):
@@ -95,4 +113,3 @@ class Config(BaseSettings):
 
 
 config = Config()
-QIWI_CLIENT = QiwiP2PClient(secret_p2p=config.payment.qiwi.token)

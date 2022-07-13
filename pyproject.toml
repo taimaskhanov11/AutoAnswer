@@ -14,6 +14,7 @@ PyYAML = "^6.0"
 APScheduler = "^3.9.1"
 Telethon = {extras = ["cryptg"], version = "^1.24.0"}
 glqiwiapi = "^2.11"
+requests = "^2.28.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

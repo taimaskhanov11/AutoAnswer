@@ -48,7 +48,6 @@ async def create_subscription_template_finish(call: types.CallbackQuery, state: 
     # await message.answer("ФИНИШ")
     for s in await SubscriptionTemplate.all():
         await s.delete()
-
     sub_data: list[dict] = load_yaml("subscriptions.yaml")
     await SubscriptionTemplate.create_from_dict(sub_data)
     await call.message.answer("✅ Подписки успешно выгружены")

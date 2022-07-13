@@ -8,6 +8,7 @@ from telethon import events
 from tortoise import fields, models
 
 from autoanswer.apps.bot.temp import controllers
+from autoanswer.apps.bot.utils.message import styled_message
 from autoanswer.config.config import MEDIA_DIR
 
 if typing.TYPE_CHECKING:
@@ -24,28 +25,44 @@ class File(BaseModel):
 
 
 class Trigger(models.Model):
+    id: int
     phrases = fields.JSONField()  # list
     answer = fields.TextField(null=True)
-    file_name = fields.TextField(null=True)
+    file_name = fields.CharField(50, null=True)
     trigger_collection: fields.ForeignKeyRelation['TriggerCollection'] = fields.ForeignKeyField(
         "models.TriggerCollection", related_name="triggers")
+    trigger_collection_id: int
 
-    def __str__(self):
-        _str = (f"{md.hbold('Фразы: ')}️ {md.hcode(', '.join(self.phrases))}\n"
-                f"{md.hbold('Текст ответа: ')}{md.hcode(self.answer)}")
+    @property
+    def prettify(self):
+        _str = (f"{md.bold('Фразы: ')}️ {md.code(', '.join(self.phrases))}\n"
+                # f"{md.bold('Текст ответа: ')}{md.code(self.answer)}")
+                f"{md.bold('Текст ответа: ')}{styled_message(self.answer)}")
         if self.file_name:
-            _str += f"\n{md.hbold('Файл: ')}{md.hcode(self.file_name)}"
+            _str += f"\n{md.bold('Файл: ')}{md.code(self.file_name)}"
         return _str
+
+    @classmethod
+    async def get_local_or_full(cls, pk: int) -> 'Trigger':
+        trigger = await cls.get(pk=pk)
+        if controller := controllers.get(trigger.trigger_collection_id):
+            return controller.trigger_collection.get_trigger(pk)
+        await trigger.fetch_related("trigger_collection")
+        return trigger
+
+    @classmethod
+    async def get_full(cls, pk: int | str) -> 'Trigger':
+        return await cls.get(id=pk).select_related('trigger_collection')
+
+    @staticmethod
+    def fix_phrases(phrases: str | list):
+        if isinstance(phrases, str):
+            phrases = map(lambda x: x.strip(), phrases.split(","))
+        return list(map(lambda x: x.lower(), phrases))
 
     async def set_phrases(self, phrases: list | str):
         self.phrases = self.fix_phrases(phrases)
         await self.save(update_fields=["phrases"])
-
-    @classmethod
-    def fix_phrases(cls, phrases: str | list):
-        if isinstance(phrases, str):
-            phrases = list(map(lambda x: x.strip(), phrases.split(",")))
-        return phrases
 
     async def set_answer(self, answer: str):
         self.answer = answer.lower()
@@ -64,6 +81,8 @@ class Trigger(models.Model):
 
 
 class TriggerCollection(models.Model):
+    id: int
+    account_id: int
     account: 'Account' = fields.OneToOneField("models.Account", related_name="trigger_collection")
     reply_to_phrases = fields.BooleanField(default=False)
     reply_to_all_messages = fields.BooleanField(default=False)
@@ -73,30 +92,48 @@ class TriggerCollection(models.Model):
 
     delay_before_answer = fields.IntField(default=0)
     answer_to_all_messages = fields.TextField(null=True)
+    file_name = fields.CharField(50, null=True)
+
     triggers: fields.ReverseRelation[Trigger]
 
     @classmethod
-    async def get_from_local_or_full(cls, pk: int | str):
+    async def get_full(cls, pk: int | str):
+        return await cls.get(pk=pk).prefetch_related("triggers", "account")
+
+    @classmethod
+    async def get_local_or_full(cls, pk: int | str) -> 'TriggerCollection':
         if controller := controllers.get(pk):
             return controller.trigger_collection
-        return await cls.get(id=pk).prefetch_related("triggers", "account")
+        return await cls.get_full(pk)
 
     @classmethod
-    async def refresh_if_local(cls, pk: int | str):
+    async def refresh_local(cls, pk: int | str, _fields: list = None):
         if controller := controllers.get(pk):
-            await controller.trigger_collection.refresh_from_db()
+            await controller.trigger_collection.refresh_from_db(fields=_fields)
 
     @classmethod
-    async def get_full(cls, pk: int | str):
-        return await cls.get(id=pk).prefetch_related("triggers", "account")
+    async def refresh_local_to_new(cls, pk: int | str):
+        if controller := controllers.get(pk):
+            trigger_collection = await cls.get_full(pk)
+            controller.trigger_collection = trigger_collection
+
+    def get_trigger(self, pk: int | str):
+        for trigger in self.triggers:
+            if trigger.pk == pk:
+                return trigger
 
     async def switch_status(self, field: str):
+        """Switch answer status"""
         setattr(self, field, not getattr(self, field))
         await self.save(update_fields=[field])
 
     async def set_answer(self, answer: str):
         self.answer_to_all_messages = answer
         await self.save(update_fields=["answer_to_all_messages"])
+
+    async def set_delay_before_answer(self, delay: int):
+        self.delay_before_answer = delay
+        await self.save(update_fields=["delay_before_answer"])
 
     def get_answer(self, event: events.NewMessage.Event):
         # todo 7/12/2022 12:18 PM taima: переделать
@@ -137,19 +174,30 @@ class TriggerCollection(models.Model):
             if self.reply_to_all_messages:
                 logger.success("Ответ на все сообщения {text} -> {answer_to_all_messages}", text=event.message.text,
                                answer_to_all_messages=self.answer_to_all_messages)
+
+                if self.file_name:
+                    return File(path=self.file_name, caption=self.answer_to_all_messages)
                 return self.answer_to_all_messages
+
             logger.trace("Ответ не найден -> {text}", text=event.message.text)
         else:
             logger.debug("Не соответствует требованиям. Поиск отключен")
 
-    def __str__(self):
+    @property
+    def triggers_prettify(self):
         triggers_str = ""
         for num, value in enumerate(self.triggers, 1):
-            p_num = md.hcode(f'# {num}')
-            triggers_str += f"{p_num}\n{value}\n\n"
+            p_num = md.code(f'# {num}')
+            triggers_str += f"{p_num}\n{value.prettify}\n\n"
+        return triggers_str
+
+    @property
+    def prettify(self):
         return (
             f"Аккаунт: {self.account.full_name}\n"
-            f"{triggers_str}\n"
-            f"{md.hbold('Текст ответа на все сообщения: ')}\n"
-            f"{md.hcode(self.answer_to_all_messages)}\n"
+            f"{self.triggers_prettify}\n"
+            f"{md.bold('Текст ответа на все сообщения: ')}\n"
+            f"{styled_message(self.answer_to_all_messages)}\n"
+            f"{md.bold('Задержка перед ответом: ')}{md.code(self.delay_before_answer)} секунд\n"
+            # f"{md.code(self.answer_to_all_messages)}\n"
         )

@@ -14,6 +14,7 @@ from telethon.tl import types
 from autoanswer.apps.bot import temp
 from autoanswer.apps.bot.markups.common import common_markups
 from autoanswer.apps.bot.temp import controller_codes_queue, controllers
+from autoanswer.apps.bot.utils.message import styled_message
 from autoanswer.config.config import config
 from autoanswer.db.models import Account, User
 from autoanswer.db.models.trigger import TriggerCollection, File
@@ -80,6 +81,18 @@ class Controller(BaseModel):
     def _from_self(event: events.NewMessage.Event):
         return event.chat_id == config.bot.id
 
+    async def answer(self, chat, _answer: str | File):
+        if isinstance(_answer, File):
+            await self.client.send_file(
+                chat,
+                _answer.path,
+                caption=_answer.caption,
+            )
+        else:
+            # todo 7/13/2022 12:14 PM taima: md code
+            await self.client.send_message(chat, styled_message(_answer))
+            # await self.client.send_message(chat, md.)
+
     @logger.catch
     async def listening(self):
         """Настройка ответов на сообщения"""
@@ -99,16 +112,7 @@ class Controller(BaseModel):
                 if answer:
                     logger.success("Answer find {answer}", answer=answer)
                     await asyncio.sleep(self.get_random_sleep_time())
-
-                    if isinstance(answer, File):
-                        await self.client.send_file(
-                            event.chat_id,
-                            answer.path,
-                            caption=answer.caption,
-                        )
-                    else:
-                        await self.client.send_message(await event.get_chat(), answer)
-
+                    await self.answer(event.chat_id, answer)
                     if self.trigger_collection.reply_only_first_message:
                         self.answered.append(event.chat_id)
 

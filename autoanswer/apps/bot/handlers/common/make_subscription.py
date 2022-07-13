@@ -8,7 +8,7 @@ from loguru import logger
 from autoanswer.apps.bot.callback_data.base_callback import SubscriptionTemplateCallback, Action
 from autoanswer.apps.bot.markups.common import make_subscription_markups
 from autoanswer.config.config import TZ
-from autoanswer.db.models import InvoiceCrypto, InvoiceQiwi
+from autoanswer.db.models import InvoiceCrypto, InvoiceQiwi, InvoiceYooKassa
 from autoanswer.db.models import SubscriptionTemplate, User
 
 router = Router()
@@ -78,11 +78,17 @@ async def subscription_purchase_method(call: types.CallbackQuery, user: User, st
         return
 
     if call.data == "qiwi":
-        logger.trace("qiwi")
+        logger.debug(f"{user.user_id} Payment via QIWI")
         invoice = await InvoiceQiwi.create_invoice(**purchase_data)
+
+    elif call.data == "yookassa":
+        logger.debug(f"{user.user_id} Payment via YooKassa")
+        invoice = await InvoiceYooKassa.create_invoice(**purchase_data)
+
     else:  # call.data == crypto
-        logger.trace("crypto")
+        logger.debug(f"{user.user_id} Payment via Crypto")
         invoice = await InvoiceCrypto.create_invoice(**purchase_data)
+
     await call.message.answer(f"✅ Чек на оплату подписки {subscription.view} Создан!",
                               reply_markup=make_subscription_markups.subscription_purchase_method(invoice.pay_url))
     await state.clear()
