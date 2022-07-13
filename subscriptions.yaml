@@ -1,5 +1,12 @@
-- title: 1 день – цена 1.00 руб.
-  price: 1
-  duration: 35
+- title: 1 Год (850 Руб.)
+  price: 850
+  duration: 355
 
+- title: 1 Месяц (250 Руб.)
+  price: 250
+  duration: 30
+
+- title: 3 Дня (50 Руб.)
+  price: 50
+  duration: 3
 

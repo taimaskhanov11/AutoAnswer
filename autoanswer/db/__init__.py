@@ -8,7 +8,6 @@ __all__ = (
     "models",
     "utils"
 )
-
 from autoanswer.config.config import Database, config
 
 MODELS_DIR = "autoanswer.db.models"
@@ -16,6 +15,7 @@ MODELS_DIR = "autoanswer.db.models"
 
 async def init_db(db: Database = config.db):
     logger.debug(f"Initializing Database {db.database}[{db.host}]...")
+    print(MODELS_DIR)
     data = {
         "db_url": db.postgres_url,
         "modules": {"models": [MODELS_DIR]},
@@ -31,3 +31,4 @@ async def init_db(db: Database = config.db):
         logger.success(f"New database {db.database} created")
 
     logger.debug(f"Database {db.database}[{db.host}] initialized")
+# Tortoise.init_models(['autoanswer.db.models'], 'models')
