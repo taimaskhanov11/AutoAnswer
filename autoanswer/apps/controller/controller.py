@@ -71,6 +71,7 @@ class Controller(BaseModel):
 
     async def start(self):
         """Создать новый client и запустить"""
+        # todo 7/14/2022 6:06 PM taima:
         self.init()
         logger.debug(f"Контроллер создан")
         try:
@@ -80,11 +81,13 @@ class Controller(BaseModel):
         except telethon.errors.rpcerrorlist.PhoneNumberBannedError as e:
             account = await Account.get(pk=self.trigger_collection.account_id)
             await account.delete()
-            await bot.send_message(self.owner_id,
-                                   f"Произошла ошибка при подключении,вероятно аккаунт забанен.\n"
-                                   f"Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
-            logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner.user_id, self.api_id, e))
+            # await bot.send_message(self.owner_id,
+            #                        f"Произошла ошибка при подключении,вероятно аккаунт забанен.\n"
+            #                        f"Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
+            await bot.send_message(269019356, "hi")
+            logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner_id, self.api_id, e))
         except Exception as e:
+            print(e)
             logger.critical(e)
 
     async def stop(self):
