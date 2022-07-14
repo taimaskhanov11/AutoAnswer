@@ -69,7 +69,7 @@ class Controller(BaseModel):
         self.init()
         logger.debug(f"Контроллер создан")
         try:
-            await self.client.connect()
+            await self.client.start()
             await self.listening()
         except Exception as e:
             logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner.user_id, self.api_id, e))
