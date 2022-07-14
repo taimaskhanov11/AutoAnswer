@@ -35,9 +35,9 @@ async def get_trigger_collections(
     await state.clear()
     triggers_coll = await user.get_trigger_collections()
     if not triggers_coll:
-        await call.message.answer("У вас нет ни одной коллекции ответов")
+        await call.message.answer("Для начала подключите хотя бы 1 аккаунт.")
         return
-    await call.message.answer("Текущие подключенные аккаунты:",
+    await call.message.answer("Выберите аккаунт:",
                               reply_markup=triggers_markups.get_trigger_collections(triggers_coll))
 
 

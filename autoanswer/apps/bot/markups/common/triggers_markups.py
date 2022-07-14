@@ -9,7 +9,7 @@ from autoanswer.db.models.trigger import TriggerCollection, Trigger
 def get_trigger_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     keyword = [
-        ("👥Текущие аккаунты", TriggerCollectionCallback(action=Action.all)),
+        ("💬 Настроить автоответы", TriggerCollectionCallback(action=Action.all)),
         ("➕👤 Привязать аккаунт", AccountCallback(action=AccountAction.bind)),
         # ("➖👤 Отвязать аккаунт", AccountCallback(action=AccountAction.unbind)),
     ]
@@ -43,36 +43,36 @@ def switch_trigger_collection_status(trigger_collection: TriggerCollection) -> I
     reply_to_channels = off if tc.reply_to_channels else on
     reply_only_first_message = off if tc.reply_only_first_message else on
 
-    builder.button(text=f"{reply_to_phrases} ответ на фразы",
+    builder.button(text=f"{reply_to_phrases} Ответ на фразы",
                    callback_data=TriggerCollectionCallback(
                        pk=tc.pk,
                        action=TriggerCollectionAction.switch, payload="reply_to_phrases"))
 
-    builder.button(text=f"{reply_to_all_messages} ответ на все сообщения",
+    builder.button(text=f"{reply_to_all_messages} Ответ на все сообщения",
                    callback_data=TriggerCollectionCallback(
                        pk=tc.pk,
                        action=TriggerCollectionAction.switch, payload="reply_to_all_messages"))
 
-    builder.button(text=f"{reply_to_groups} ответ на группы",
+    builder.button(text=f"{reply_to_groups} Ответы в группах",
                    callback_data=TriggerCollectionCallback(
                        pk=tc.pk,
                        action=TriggerCollectionAction.switch, payload="reply_to_groups"))
 
-    builder.button(text=f"{reply_to_channels} ответ на каналы",
+    builder.button(text=f"{reply_to_channels} Ответ на каналы",
                    callback_data=TriggerCollectionCallback(
                        pk=tc.pk,
 
                        action=TriggerCollectionAction.switch, payload="reply_to_channels"))
 
-    builder.button(text=f"{reply_only_first_message} ответ только на первое сообщение",
+    builder.button(text=f"{reply_only_first_message} Ответ только на первое сообщение",
                    callback_data=TriggerCollectionCallback(
                        pk=tc.pk,
                        action=TriggerCollectionAction.switch, payload="reply_only_first_message"))
 
-    builder.button(text="📝 Создать новый автоответ",
+    builder.button(text="📝 Создать новый автоответ на фразы",
                    callback_data=TriggerCallback(pk=tc.pk, action=Action.create))
 
-    builder.button(text="Изменить текст ответа на все сообщения",
+    builder.button(text="📝 Создать / изменить автоответ",
                    callback_data=TriggerCollectionCallback(
                        pk=tc.pk,
                        action=TriggerCollectionAction.edit_answer_to_all_messages).pack())
@@ -81,7 +81,7 @@ def switch_trigger_collection_status(trigger_collection: TriggerCollection) -> I
                    callback_data=TriggerCollectionCallback(pk=tc.pk, action=Action.edit)),
     # builder.button(text="Удалить ответ",
     #                callback_data=TriggerCollectionCallback(pk=tc.pk, action=Action.delete)),
-    builder.button(text="Отвязать аккаунт",
+    builder.button(text="➖ Отвязать аккаунт",
                    callback_data=AccountCallback(pk=tc.account_id, action=AccountAction.unbind)),
     builder.adjust(1)
     builder.button(text="⬅️ Назад", callback_data="start")

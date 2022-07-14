@@ -23,16 +23,20 @@ async def profile(message: types.Message, user: User, state: FSMContext):
         f"{md.bold('🔑 ID')}: {md.code(user.user_id)}\n"
         f"{md.bold('👤 Username')}: @{md.code(user.username)}\n"
         f"{md.bold('💵 Подписка')} - {md.italic(user.subscription.title)}\n"
-        f"🕜 Осталось дней до завершения до завершения подписки - {md.code(user.subscription.duration)}.\n",
+        f"🕜 Осталось дней - {md.code(user.subscription.duration)}.\n",
     )
 
 
 async def description(message: types.Message, state: FSMContext):
-    await message.answer("Описание")
+    await message.answer("📄 Инструкция:\n\n"
+                         "➡️ Как начать работать с БОТом: https://t.me/autoanswers/7\n"
+                         "➡️ Как настроить автоответы: https://t.me/autoanswers/9 \n"
+                         "➡️ Тарифы: https://t.me/autoanswers/10 \n"
+                         "📹 Видеоинструкция: https://youtu.be/e7SMoMNzTYo")
 
 
 async def support(message: types.Message, state: FSMContext):
-    await message.answer("Поддержка")
+    await message.answer("🧑🏻‍💻 Поддержка: @ihelp_s", "html")
 
 
 def register_common(dp: router):
