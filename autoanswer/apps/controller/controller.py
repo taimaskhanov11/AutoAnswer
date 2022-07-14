@@ -68,7 +68,7 @@ class Controller(BaseModel):
         """Создать новый client и запустить"""
         self.init()
         logger.debug(f"Контроллер создан")
-        await self.client.connect()
+        await self.client.start()
         await self.listening()
 
     async def stop(self):
