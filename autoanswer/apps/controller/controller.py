@@ -66,8 +66,6 @@ class Controller(BaseModel):
 
     async def get_phone_try(self):
         """Попытка получить номер телефона"""
-        await bot.send_message(self.owner_id,
-                               f"Произошла ошибка, Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
         raise Exception("Не удалось получить номер телефона")
 
     async def start(self):
@@ -78,8 +76,10 @@ class Controller(BaseModel):
             await self.client.start(lambda: self.phone)
             await self.listening()
         except Exception as e:
+            await bot.send_message(self.owner_id,
+                                   f"Произошла ошибка при подключении,вероятно аккаунт забанен. Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
             logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner.user_id, self.api_id, e))
-
+            raise
     async def stop(self):
         """Приостановить client и удалить"""
         await self.client.disconnect()
