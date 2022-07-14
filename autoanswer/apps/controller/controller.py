@@ -64,12 +64,18 @@ class Controller(BaseModel):
             lambda: self.phone
         )
 
+    async def get_phone_try(self):
+        """Попытка получить номер телефона"""
+        await bot.send_message(self.owner_id,
+                               f"Произошла ошибка, Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
+        raise Exception("Не удалось получить номер телефона")
+
     async def start(self):
         """Создать новый client и запустить"""
         self.init()
         logger.debug(f"Контроллер создан")
         try:
-            await self.client.start()
+            await self.client.start(lambda: self.get_phone_try)
             await self.listening()
         except Exception as e:
             logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner.user_id, self.api_id, e))
