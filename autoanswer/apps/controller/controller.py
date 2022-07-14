@@ -68,7 +68,10 @@ class Controller(BaseModel):
         """Создать новый client и запустить"""
         self.init()
         logger.debug(f"Контроллер создан")
-        await self.client.start()
+        try:
+            await self.client.connect()
+        except Exception as e:
+            logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner.user_id, self.api_id, e))
         await self.listening()
 
     async def stop(self):
