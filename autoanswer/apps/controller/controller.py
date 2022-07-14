@@ -5,6 +5,7 @@ from asyncio import Queue
 from pathlib import Path
 from typing import Optional
 
+import telethon
 from aiogram.dispatcher.fsm.storage.base import StorageKey
 from loguru import logger
 from pydantic import BaseModel
@@ -75,12 +76,17 @@ class Controller(BaseModel):
         try:
             await self.client.start(lambda: self.phone)
             await self.listening()
-        except Exception as e:
-            raise e
-            # await bot.send_message(self.owner_id,
-            #                        f"Произошла ошибка при подключении,вероятно аккаунт забанен. Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
+
+        except telethon.errors.rpcerrorlist.PhoneNumberBannedError as e:
+            account = await Account.get(pk=self.trigger_collection.account_id)
+            await account.delete()
+            await bot.send_message(self.owner_id,
+                                   f"Произошла ошибка при подключении,вероятно аккаунт забанен.\n"
+                                   f"Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
             logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner.user_id, self.api_id, e))
-            raise
+        except Exception as e:
+            logger.critical(e)
+
     async def stop(self):
         """Приостановить client и удалить"""
         await self.client.disconnect()
