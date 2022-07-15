@@ -91,7 +91,8 @@ class Controller(BaseModel):
     async def stop(self):
         """Приостановить client и удалить"""
         await self.client.disconnect()
-        del temp.controllers[self.api_id]
+        if temp.controllers.get(self.api_id):
+            del temp.controllers[self.api_id]
         logger.info(f"Контроллер {self} приостановлен и удален")
 
     @staticmethod
