@@ -75,7 +75,9 @@ class Controller(BaseModel):
         logger.debug(f"Контроллер создан")
         try:
             # await self.client.start(lambda: self.phone)
-            await self.client.start(lambda: self.get_phone_try())
+            # await self.client.start(lambda: self.get_phone_try())
+            await self.client.connect()
+            await self.client.get_me()
             await self.listening()
 
         except Exception as e:
