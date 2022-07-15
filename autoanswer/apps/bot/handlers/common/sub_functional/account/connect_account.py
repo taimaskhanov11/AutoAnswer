@@ -114,10 +114,10 @@ async def unbind_account_done(
         state: FSMContext):
     if call.data == "yes":
         data = await state.get_data()
-        account = await Account.get_or_none(pk=data["account_pk"])
+        account = await Account.get_or_none(pk=data["account_pk"]).select_related("trigger_collection")
         if account:
             await account.delete()
-            if controller := controllers.get(account.api_id):
+            if controller := controllers.get(account.trigger_collection.pk):
                 await controller.stop()
             await call.message.answer(_("Аккаунт успешно отключен"))
         else:

@@ -94,10 +94,10 @@ class Controller(BaseModel):
     async def stop(self):
         """Приостановить client и удалить"""
         await self.client.disconnect()
-        if temp.controllers.get(self.api_id):
-            del temp.controllers[self.api_id]
+        if temp.controllers.get(self.trigger_collection.pk):
+            del temp.controllers[self.trigger_collection.pk]
         if self.path.exists():
-            self.path.unlink()
+            self.path.unlink(missing_ok=True)
         logger.info(f"Контроллер {self} приостановлен и удален")
 
     @staticmethod
@@ -153,7 +153,7 @@ class ConnectAccountController(Controller):
 
     async def clear_temp(self):
         await self.client.disconnect()
-        del controllers[self.api_id]
+        del controllers[self.trigger_collection.pk]
         self.path.unlink(missing_ok=True)
         del controller_codes_queue[self.owner_id]
         logger.info(f"Временные файлы очищены {self}")
