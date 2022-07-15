@@ -65,7 +65,7 @@ class Trigger(models.Model):
         await self.save(update_fields=["phrases"])
 
     async def set_answer(self, answer: str):
-        self.answer = answer.lower()
+        self.answer = answer
         await self.save(update_fields=["answer"])
 
     async def set_file_name(self, file_name: str):
