@@ -10,7 +10,7 @@ from loguru import logger
 from autoanswer.apps.bot.callback_data.base_callback import AccountCallback, AccountAction
 from autoanswer.apps.bot.markups.admin import admin_markups
 from autoanswer.apps.bot.markups.common import common_markups, accounts_markups
-from autoanswer.apps.bot.temp import controller_codes_queue
+from autoanswer.apps.bot.temp import controller_codes_queue, controllers
 from autoanswer.apps.controller.controller import ConnectAccountController
 from autoanswer.db.models import User, Account
 from autoanswer.loader import _
@@ -36,7 +36,7 @@ async def connect_account(call: types.CallbackQuery, user: User, state: FSMConte
     if len(user.accounts) >= 3:
         await call.message.answer(_("Вы не можете подключить более 3 аккаунтов"))
         return
-    
+
     await call.message.answer(_(
         f"▫️ Для подключения аккаунта перейдите по 👉🏻 {link}\n\n"
         "▫️ Введите данные аккаунта (номер телефона и затем код) \n\n"
@@ -117,6 +117,8 @@ async def unbind_account_done(
         account = await Account.get_or_none(pk=data["account_pk"])
         if account:
             await account.delete()
+            if controller := controllers.get(account.api_id):
+                await controller.stop()
             await call.message.answer(_("Аккаунт успешно отключен"))
         else:
             await call.message.answer(_("Аккаунт не найден"))
