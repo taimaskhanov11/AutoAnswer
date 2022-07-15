@@ -72,7 +72,7 @@ class Controller(BaseModel):
         """Создать новый client и запустить"""
         # todo 7/14/2022 6:06 PM taima:
         self.init()
-        logger.debug(f"Контроллер создан")
+        logger.info(f"Контроллер создан")
         try:
             # await self.client.start(lambda: self.phone)
             # await self.client.start(lambda: self.get_phone_try())
@@ -96,8 +96,8 @@ class Controller(BaseModel):
         await self.client.disconnect()
         if temp.controllers.get(self.trigger_collection.pk):
             del temp.controllers[self.trigger_collection.pk]
-        if self.path.exists():
-            self.path.unlink(missing_ok=True)
+        # if self.path.exists():
+        #     self.path.unlink(missing_ok=True)
         logger.info(f"Контроллер {self} приостановлен и удален")
 
     @staticmethod
@@ -153,7 +153,10 @@ class ConnectAccountController(Controller):
 
     async def clear_temp(self):
         await self.client.disconnect()
-        del controllers[self.trigger_collection.pk]
+
+        if self.trigger_collection:
+            if controllers.get(self.trigger_collection.pk):
+                del controllers[self.trigger_collection.pk]
         self.path.unlink(missing_ok=True)
         del controller_codes_queue[self.owner_id]
         logger.info(f"Временные файлы очищены {self}")
@@ -192,20 +195,21 @@ class ConnectAccountController(Controller):
                 await self.clear_temp()
             except Exception as e:
                 logger.warning(e)
-            return
+            return False
         await self.clear_state()
 
         account_data: types.User = await self.client.get_me()
         account = await Account.connect(self, account_data.to_dict())
         self.trigger_collection = account.trigger_collection
         await self.connect_finished_message()
+        return True
 
     async def start(self):
         self.init()
-        logger.debug(f"Контроллер создан")
-        await self.connect_account()
-        controllers[self.trigger_collection.pk] = self
-        await self.listening()
+        logger.info(f"Контроллер создан")
+        if await self.connect_account():
+            controllers[self.trigger_collection.pk] = self
+            await self.listening()
 
 
 async def start_controller(account: Account):

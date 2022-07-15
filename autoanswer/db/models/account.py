@@ -51,7 +51,7 @@ class Account(models.Model):
             logger.info(f"{account} уже существует")
         else:
             await TriggerCollection.create(account=account)
+        await account.refresh_from_db()
         await account.fetch_related("trigger_collection__triggers",
                                     "trigger_collection__account")
-        await account.refresh_from_db()
         return account
