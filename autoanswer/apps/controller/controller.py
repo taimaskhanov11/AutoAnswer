@@ -96,6 +96,8 @@ class Controller(BaseModel):
         await self.client.disconnect()
         if temp.controllers.get(self.api_id):
             del temp.controllers[self.api_id]
+        if self.path.exists():
+            self.path.unlink()
         logger.info(f"Контроллер {self} приостановлен и удален")
 
     @staticmethod
