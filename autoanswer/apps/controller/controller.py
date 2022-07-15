@@ -132,7 +132,7 @@ class Controller(BaseModel):
                 if answer:
                     logger.success("Answer find {answer}", answer=answer)
                     await asyncio.sleep(self.get_random_sleep_time())
-                    await self.answer(event.chat_id, answer)
+                    await self.answer(await event.get_chat(), answer)
                     if self.trigger_collection.reply_only_first_message:
                         self.answered.append(event.chat_id)
 
