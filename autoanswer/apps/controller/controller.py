@@ -185,7 +185,10 @@ class ConnectAccountController(Controller):
             await bot.send_message(
                 self.owner_id, _("🚫 Ошибка, отмена привязки ... Попробуйте отключить Двухэтапную аутентификацию")
             )
-            await self.clear_temp()
+            try:
+                await self.clear_temp()
+            except Exception as e:
+                logger.warning(e)
             return
         await self.clear_state()
 
