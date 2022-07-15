@@ -81,10 +81,11 @@ class Controller(BaseModel):
         except telethon.errors.rpcerrorlist.PhoneNumberBannedError as e:
             account = await Account.get(pk=self.trigger_collection.account_id)
             await account.delete()
-            # await bot.send_message(self.owner_id,
-            #                        f"Произошла ошибка при подключении,вероятно аккаунт забанен.\n"
-            #                        f"Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
-            await bot.send_message(269019356, "hi")
+            await self.stop()
+            await bot.send_message(self.owner_id,
+                                   f"Произошла ошибка при подключении,вероятно аккаунт забанен.\n"
+                                   f"Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
+            # await bot.send_message(269019356, "hi")
             logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner_id, self.api_id, e))
         except Exception as e:
             print(e)
