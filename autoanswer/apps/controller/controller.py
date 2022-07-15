@@ -78,6 +78,7 @@ class Controller(BaseModel):
             # await self.client.start(lambda: self.get_phone_try())
             await self.client.connect()
             await self.client.get_me()
+            controllers[self.trigger_collection.pk] = self
             await self.listening()
 
         except Exception as e:
@@ -213,7 +214,6 @@ async def start_controller(account: Account):
         **account_data
     )
     asyncio.create_task(controller.start())
-    controllers[controller.trigger_collection.pk] = controller
 
     logger.info(f"Контроллер {controller} запущен")
 
