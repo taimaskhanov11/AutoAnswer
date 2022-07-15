@@ -75,7 +75,8 @@ class Controller(BaseModel):
         self.init()
         logger.debug(f"Контроллер создан")
         try:
-            await self.client.start(lambda: self.phone)
+            # await self.client.start(lambda: self.phone)
+            await self.client.start(lambda: self.get_phone_try())
             await self.listening()
 
         except telethon.errors.rpcerrorlist.PhoneNumberBannedError as e:
