@@ -91,7 +91,8 @@ async def connect_account_code(message: types.Message, user: User, state: FSMCon
         return
     code = message.text.replace("code", "").strip()
     queue = controller_codes_queue.get(user.user_id)
-    queue.put_nowait(code)
+    if queue:
+        queue.put_nowait(code)
     await message.answer(
         _("Код получен, ожидайте завершения\nЕсли все прошло успешно Вам придет сообщение в личный чат."))
     await state.clear()

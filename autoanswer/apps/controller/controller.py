@@ -159,7 +159,8 @@ class ConnectAccountController(Controller):
             if controllers.get(self.trigger_collection.pk):
                 del controllers[self.trigger_collection.pk]
         self.path.unlink(missing_ok=True)
-        del controller_codes_queue[self.owner_id]
+        if controllers.get(self.owner_id):
+            del controllers[self.owner_id]
         logger.info(f"Временные файлы очищены {self}")
 
     async def connect_finished_message(self):
