@@ -13,6 +13,19 @@ from autoanswer.db.models.trigger import TriggerCollection
 
 router = Router()
 
+edit_text_answer = ("Отправьте ответ!\n\n"
+                    "Ответом может быть текст, фото, видео, голосовое сообщение или любой другой файл.\n"
+                    "Также вы можете прикрепить файл к тексту.\n\n"
+                    "Чтобы стилизовать текст используйте следующие атрибуты:\n\n"
+                    f"<жир>текст</жир> - {md.bold('жирный')}\n"
+                    f"<кур>текст</кур> - {md.italic('курсив')}\n"
+                    # f"<под>текст</под> - {md.underline('подчеркнутый')}\n"
+                    f"<пер>текст</пер> - {md.strikethrough('перечеркнутый')}\n"
+                    f"<код>текст</код> - {md.code('код')}\n"
+                    f"<скр>текст</скр> - Скрытый текст\n\n"
+                    "Пример:\n"
+                    f"Так делается {md.bold('<жир>жирный текст</жир>')}\n\n")
+
 
 class EditTriggerCollectionAnswer(StatesGroup):
     edit = State()
@@ -91,19 +104,7 @@ async def edit_trigger_collection_answer(
         callback_data: TriggerCollectionCallback):
     await state.clear()
     await state.update_data(trigger_collection_answer_pk=callback_data.pk)
-    await call.message.answer("Отправьте ответ на все сообщения.\n"
-                              "Ответом может быть текст, голосовое или любой другой файл.\n"
-                              "Вы можете прикрепить сообщение к файлу.\n"
-                              "Вы можете стилизовать сообщение с помощью следующих атрибутов атрибутов:\n"
-                              f"<жир>текст</жир> - {md.bold('жирный')}\n"
-                              f"<кур>текст</кур> - {md.italic('курсив')}\n"
-                              # f"<под>текст</под> - {md.underline('подчеркнутый')}\n"
-                              f"<пер>текст</пер> - {md.strikethrough('перечеркнутый')}\n"
-                              f"<код>текст</код> - {md.code('код')}\n\n"
-                              f"<скр>текст</скр> - Скрытый текст\n\n"
-                              "Пример:\n Сам ты <жир>Жирный</жир>\n"
-                              f"Результат: Сам ты {md.bold('Жирный')}\n\n",
-                              reply_markup=types.ReplyKeyboardRemove())
+    await call.message.answer(edit_text_answer, reply_markup=types.ReplyKeyboardRemove())
 
     await state.set_state(EditTriggerCollectionAnswer.edit)
 

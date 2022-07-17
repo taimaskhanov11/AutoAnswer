@@ -1,9 +1,9 @@
 from aiogram import Router, types, F
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.dispatcher.fsm.state import StatesGroup, State
-from aiogram.utils import markdown as md
 
 from autoanswer.apps.bot.callback_data.base_callback import TriggerCallback, Action, TriggerAction
+from autoanswer.apps.bot.handlers.common.sub_functional.trigger.trigger_menu import edit_text_answer
 from autoanswer.apps.bot.markups.common import triggers_markups
 from autoanswer.apps.bot.utils.message import check_for_file
 from autoanswer.db.models.trigger import Trigger, TriggerCollection
@@ -54,19 +54,7 @@ async def create_trigger_phrases(message: types.Message,
                                  state: FSMContext):
     phrases = Trigger.fix_phrases(message.text)
     await state.update_data(phrases=phrases)
-    await message.answer("Отправьте ответ на все сообщения.\n"
-                         "Ответом может быть текст, голосовое или любой другой файл.\n"
-                         "Вы можете прикрепить сообщение к файлу.\n"
-                         "Вы можете стилизовать сообщение с помощью следующих атрибутов атрибутов:\n"
-                         f"<жир>текст</жир> - {md.bold('жирный')}\n"
-                         f"<кур>текст</кур> - {md.italic('курсив')}\n"
-                         # f"<под>текст</под> - {md.underline('подчеркнутый')}\n"
-                         f"<пер>текст</пер> - {md.strikethrough('перечеркнутый')}\n"
-                         f"<код>текст</код> - {md.code('код')}\n\n"
-                         f"<скр>текст</скр> - Скрытый текст\n\n"
-                         "Пример:\n Сам ты <жир>Жирный</жир>\n"
-                         f"Результат: Сам ты {md.bold('Жирный')}\n\n",
-                         reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(edit_text_answer, reply_markup=types.ReplyKeyboardRemove())
     await state.set_state(CreateTrigger.answer)
 
 
@@ -123,18 +111,7 @@ async def edit_trigger_answer(call: types.CallbackQuery,
                               callback_data: TriggerCallback):
     await state.clear()
     await state.update_data(trigger_pk=callback_data.pk)
-    await call.message.answer("Отправьте ответ на все сообщения.\n"
-                              "Ответом может быть текст, голосовое или любой другой файл.\n"
-                              "Вы можете прикрепить сообщение к файлу.\n"
-                              "Вы можете стилизовать сообщение с помощью следующих атрибутов атрибутов:\n"
-                              f"<жир>текст</жир> - {md.bold('жирный')}\n"
-                              f"<кур>текст</кур> - {md.italic('курсив')}\n"
-                              # f"<под>текст</под> - {md.underline('подчеркнутый')}\n"
-                              f"<пер>текст</пер> - {md.strikethrough('перечеркнутый')}\n"
-                              f"<код>текст</код> - {md.code('код')}\n\n"
-                              f"<скр>текст</скр> - Скрытый текст\n\n"
-                              "Пример:\n Сам ты <жир>Жирный</жир>\n"
-                              f"Результат: Сам ты {md.bold('Жирный')}\n\n",
+    await call.message.answer(edit_text_answer,
                               reply_markup=types.ReplyKeyboardRemove())
     await state.set_state(EditTriggerPhrases.answer)
 
