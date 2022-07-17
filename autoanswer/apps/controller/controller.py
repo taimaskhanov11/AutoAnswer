@@ -75,8 +75,8 @@ class Controller(BaseModel):
         logger.info(f"Контроллер создан")
         try:
             # await self.client.start(lambda: self.phone)
-            # await self.client.start(lambda: self.get_phone_try())
-            await self.client.connect()
+            await self.client.start(lambda: self.get_phone_try())
+            # await self.client.connect()
             await self.client.get_me()
             controllers[self.trigger_collection.pk] = self
             await self.listening()
@@ -84,20 +84,21 @@ class Controller(BaseModel):
         except Exception as e:
             account = await Account.get(pk=self.trigger_collection.account_id)
             await account.delete()
-            await self.stop()
+            await self.stop(unlink=True)
             await bot.send_message(self.owner_id,
                                    f"Произошла ошибка при подключении,вероятно аккаунт забанен.\n"
                                    f"Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
             # await bot.send_message(269019356, "hi")
             logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner_id, self.api_id, e))
 
-    async def stop(self):
+    async def stop(self, unlink=False):
         """Приостановить client и удалить"""
         await self.client.disconnect()
         if temp.controllers.get(self.trigger_collection.pk):
             del temp.controllers[self.trigger_collection.pk]
-        # if self.path.exists():
-        #     self.path.unlink(missing_ok=True)
+        if unlink:
+            if self.path.exists():
+                self.path.unlink(missing_ok=True)
         logger.info(f"Контроллер {self} приостановлен и удален")
 
     @staticmethod

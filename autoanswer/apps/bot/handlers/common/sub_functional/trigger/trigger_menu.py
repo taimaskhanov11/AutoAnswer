@@ -144,8 +144,7 @@ async def edit_trigger_collection_delay_done(
     data = await state.get_data()
     pk = data.get('trigger_collection_answer_pk')
     trigger_coll = await TriggerCollection.get_local_or_full(pk)
-    trigger_coll.delay_before_answer = message.text
-    await trigger_coll.set_delay_before_answer(message.text)
+    await trigger_coll.set_delay_before_answer(int(message.text))
     await state.clear()
     await message.answer("Задержка успешно изменена ✅\n\n"
                          f"{trigger_coll.prettify}",
