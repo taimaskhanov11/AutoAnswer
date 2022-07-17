@@ -20,7 +20,7 @@ class SubscriptionTemplate(models.Model):
     """Шаблоны для создания подписок"""
     title = fields.CharField(255, default="Базовая подписка", index=True)
     price = fields.IntField(default=0)
-    duration = fields.IntField(default=1)
+    duration = fields.IntField(default=5)
 
     def __str__(self):
         return self.title
