@@ -5,6 +5,8 @@ from loguru import logger
 from tortoise import models, fields
 from tortoise.functions import Sum
 
+from autoanswer.apps.bot.temp import controllers
+
 if typing.TYPE_CHECKING:
     from autoanswer.db.models.user import User
 
@@ -55,10 +57,16 @@ class Subscription(SubscriptionTemplate):
     async def decreased_duration(cls):
         """Reduce the subscription duration for all users by 1 day"""
         logger.info("Reducing subscription duration")
-        for s in await cls.all():
+        for s in await cls.all().prefetch_related("user__accounts__trigger_collection"):
             if s.duration > 0:
                 s.duration -= 1
                 await s.save(update_fields=["duration"])
+                if s.duration == 0:
+                    logger.info(f"Subscription {s} expired")
+                    for account in await s.user.accounts:
+                        if controller := controllers.get(account.trigger_collection.pk):
+                            await controller.stop()
+
         logger.info("Subscription duration reduced")
 
     @classmethod
