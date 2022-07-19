@@ -1,5 +1,4 @@
 import typing
-from typing import List
 
 from loguru import logger
 from tortoise import models, fields
@@ -33,16 +32,16 @@ class SubscriptionTemplate(models.Model):
         # f"Лимит: {self.limit or 'Безлимит'}")
 
     @classmethod
-    async def create_from_dict(cls, data: list | dict) -> List | "SubscriptionTemplate":
+    async def create_from_dict(cls, data: list | dict) -> list | tuple["SubscriptionTemplate", bool]:
         if isinstance(data, list):
-            return [await SubscriptionTemplate.create(**obj) for obj in data]
+            return [await SubscriptionTemplate.get_or_create(**obj) for obj in data]
         else:
-            return await SubscriptionTemplate.create(**data)
+            return await SubscriptionTemplate.get_or_create(**data)
 
     @classmethod
     async def refresh_subscription_templates(cls, sub_data: list[dict]):
-        for s in await SubscriptionTemplate.all():
-            await s.delete()
+        # for s in await SubscriptionTemplate.all():
+        #     await s.delete()
         await cls.create_from_dict(sub_data)
         logger.info("Subscriptions refreshed")
 

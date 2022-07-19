@@ -18,8 +18,8 @@ headers = {"Authorization": f"Token {config.payment.cryptocloud.api_key}"}
 
 class InvoiceAbstract(models.Model):
     """Абстрактный класс для создания счета"""
-    subscription_template: SubscriptionTemplate = fields.ForeignKeyField("models.SubscriptionTemplate",
-                                                                         on_delete=fields.CASCADE)
+    subscription_template: SubscriptionTemplate = fields.ForeignKeyField("models.SubscriptionTemplate", null=True,
+                                                                         on_delete=fields.SET_NULL)
     user: "User" = fields.ForeignKeyField("models.User", on_delete=fields.CASCADE)
     currency = fields.CharField(5, default="RUB", description="RUB")
     amount = fields.DecimalField(17, 7)
