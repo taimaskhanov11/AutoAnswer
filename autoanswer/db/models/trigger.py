@@ -195,7 +195,7 @@ class TriggerCollection(models.Model):
             p_num = md.code(f'# {num}')
             triggers_str += f"{p_num}\n{value.prettify}\n\n"
         # todo 7/23/2022 3:31 PM taima: переделать
-        return triggers_str
+        return triggers_str.replace("`", "").replace("*", "").replace("_", "")
 
     @property
     def prettify(self):
