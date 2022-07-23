@@ -45,7 +45,7 @@ class Trigger(models.Model):
         if self.file_name:
             _str += f"\n{md.bold('Файл: ')}{md.code(self.file_name)}"
         # todo 7/23/2022 3:32 PM taima: переделать
-        return prepare_for_answer(_str)
+        return _str
 
     @classmethod
     async def get_local_or_full(cls, pk: int) -> 'Trigger':
@@ -195,7 +195,7 @@ class TriggerCollection(models.Model):
             p_num = md.code(f'# {num}')
             triggers_str += f"{p_num}\n{value.prettify}\n\n"
         # todo 7/23/2022 3:31 PM taima: переделать
-        return prepare_for_answer(triggers_str)
+        return triggers_str
 
     @property
     def prettify(self):
