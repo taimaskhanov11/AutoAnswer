@@ -11,6 +11,7 @@ async def error_handler(update, exception: TelegramBadRequest):
     if isinstance(exception, TelegramBadRequest):
         _type, _, tb = sys.exc_info()
         logger.opt(exception=(_type, None, tb)).error("An error occurred")
+        return True
     logger.exception(exception)
     return True
 
