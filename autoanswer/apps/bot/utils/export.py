@@ -1,6 +1,8 @@
 import asyncio
 from unittest import mock
 
+from aiogram import types
+
 from autoanswer.config.config import config
 from autoanswer.db.models import User
 
@@ -12,17 +14,18 @@ fields_nums = {
 }
 
 
-async def part_sending(message, answer, reply_markup=None):
+async def part_sending(message:types.Message, answer, **kwargs):
     if len(answer) > 4096:
         for x in range(0, len(answer), 4096):
             y = x + 4096
             if y >= len(answer):
-                await message.answer(answer[x: y], reply_markup=reply_markup)
+                await message.answer(answer[x: y],  **kwargs)
             else:
                 await message.answer(answer[x:y])
             await asyncio.sleep(0.5)
     else:
-        await message.answer(answer, reply_markup=reply_markup)
+        await message.answer(answer,  **kwargs)
+
 
 
 def parse_user_fields(fields_text: str) -> tuple:

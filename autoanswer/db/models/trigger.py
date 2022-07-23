@@ -15,6 +15,10 @@ if typing.TYPE_CHECKING:
     from autoanswer.db.models.account import Account
 
 
+def prepare_for_answer(text: str):
+    return text.replace("`", " ").replace("*", " ").replace("_", " ")
+
+
 class File(BaseModel):
     path: str | Path | None
     caption: str | None
@@ -40,7 +44,8 @@ class Trigger(models.Model):
                 f"{md.bold('Текст ответа: ')}{styled_message(self.answer)}")
         if self.file_name:
             _str += f"\n{md.bold('Файл: ')}{md.code(self.file_name)}"
-        return _str
+        # todo 7/23/2022 3:32 PM taima: переделать
+        return prepare_for_answer(_str)
 
     @classmethod
     async def get_local_or_full(cls, pk: int) -> 'Trigger':
@@ -189,7 +194,8 @@ class TriggerCollection(models.Model):
         for num, value in enumerate(self.triggers, 1):
             p_num = md.code(f'# {num}')
             triggers_str += f"{p_num}\n{value.prettify}\n\n"
-        return triggers_str
+        # todo 7/23/2022 3:31 PM taima: переделать
+        return prepare_for_answer(triggers_str)
 
     @property
     def prettify(self):
