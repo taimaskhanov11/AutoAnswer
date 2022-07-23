@@ -197,7 +197,8 @@ class TriggerCollection(models.Model):
             f"Аккаунт: {self.account.full_name}\n"
             f"{self.triggers_prettify}\n"
             f"{md.bold('Текст ответа на все сообщения: ')}\n"
-            f"{styled_message(self.answer_to_all_messages)}\n"
+            # f"{styled_message(self.answer_to_all_messages)}\n"
+            f"{self.answer_to_all_messages}\n"
             f"{md.bold('Задержка перед ответом: ')}{md.code(self.delay_before_answer)} секунд\n"
             # f"{md.code(self.answer_to_all_messages)}\n"
         )
