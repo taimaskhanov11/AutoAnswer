@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
 
 
 def prepare_for_answer(text: str):
-    return text.replace("`", " ").replace("*", " ").replace("_", " ")
+    return text.replace("`", "").replace("*", "").replace("_", "")
 
 
 class File(BaseModel):
