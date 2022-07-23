@@ -209,9 +209,20 @@ class ConnectAccountController(Controller):
     async def start(self):
         self.init()
         logger.info(f"Контроллер создан")
-        if await self.connect_account():
-            controllers[self.trigger_collection.pk] = self
-            await self.listening()
+        try:
+            if await self.connect_account():
+                controllers[self.trigger_collection.pk] = self
+                await self.listening()
+
+        except Exception as e:
+            account = await Account.get_or_none(pk=self.trigger_collection.account_id)
+            if account:
+                await account.delete()
+            await self.stop(unlink=True)
+            await bot.send_message(self.owner_id,
+                                   f"Произошла ошибка при подключении,вероятно аккаунт забанен.\n"
+                                   f"Пожалуйста переподключите аккаунт {self.phone}[{self.api_id}]")
+            logger.warning("Ошибка при подключении клиента [{}]{} {}".format(self.owner_id, self.api_id, e))
 
 
 async def start_controller(account: Account):

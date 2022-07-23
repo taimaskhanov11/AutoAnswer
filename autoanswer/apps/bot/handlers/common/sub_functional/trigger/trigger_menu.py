@@ -60,10 +60,12 @@ async def get_trigger_collection(
         state: FSMContext,
         user: User):
     await state.clear()
-    trigger_collection = await TriggerCollection.get_local_or_full(pk=callback_data.pk)
-    await part_sending(call.message, trigger_collection.prettify,
-                       reply_markup=triggers_markups.switch_trigger_collection_status(trigger_collection))
-
+    try:
+        trigger_collection = await TriggerCollection.get_local_or_full(pk=callback_data.pk)
+        await part_sending(call.message, trigger_collection.prettify,
+                           reply_markup=triggers_markups.switch_trigger_collection_status(trigger_collection))
+    except Exception as e:
+        print(e)
     # await call.message.answer(
     #     f"{trigger_collection}",
     #     reply_markup=triggers_markups.switch_trigger_collection_status(trigger_collection),
