@@ -207,4 +207,5 @@ class TriggerCollection(models.Model):
             f"{self.answer_to_all_messages}\n"
             f"{md.bold('Задержка перед ответом: ')}{md.code(self.delay_before_answer)} секунд\n"
             # f"{md.code(self.answer_to_all_messages)}\n"
-        )
+        ).replace("`", "").replace("*", "").replace("_", "")
+
