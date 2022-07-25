@@ -48,6 +48,17 @@ class SubscriptionTemplate(models.Model):
         #     await s.delete()
         await cls.create_from_dict(sub_data)
         logger.info("Subscriptions refreshed")
+    @classmethod
+    async def update_subscriptions(cls, sub_data: list[dict]):
+        await SubscriptionTemplate.create_from_dict(sub_data)
+        for sub in await SubscriptionTemplate.all():
+            for d_sub in sub_data:
+                if sub.title == d_sub["title"]:
+                    break
+            else:
+                await sub.delete()
+        logger.info("Subscriptions updated")
+
 
 
 class Subscription(SubscriptionTemplate):

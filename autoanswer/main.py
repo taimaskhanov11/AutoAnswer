@@ -67,7 +67,7 @@ async def start():
     await init_controllers()
 
     # Обновление подписок
-    await SubscriptionTemplate.refresh_subscription_templates(load_yaml("subscriptions.yaml"))
+    await SubscriptionTemplate.update_subscriptions(load_yaml("subscriptions.yaml"))
 
     scheduler.add_job(Subscription.decreased_duration, "cron", hour=0, minute=0)
     scheduler.add_job(making_backup, "interval", hours=1)
