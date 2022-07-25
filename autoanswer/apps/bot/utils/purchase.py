@@ -12,7 +12,7 @@ async def checking_purchases():
     try:
         for cls in [InvoiceCrypto, InvoiceQiwi, InvoiceYooKassa]:
             logger.trace(f"Check cls {cls.__name__}")
-            invoices: list[InvoiceCrypto | InvoiceQiwi, InvoiceYooKassa] = await cls.filter(
+            invoices: list[InvoiceCrypto , InvoiceQiwi,InvoiceYooKassa] = await cls.filter(
                 expire_at__gte=datetime.datetime.now(TZ),
                 is_paid=False)
             for invoice in invoices:
