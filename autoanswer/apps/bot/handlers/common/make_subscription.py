@@ -95,7 +95,7 @@ async def subscription_purchase_method(call: types.CallbackQuery, user: User, st
 
 
 async def purchase_check(call: types.CallbackQuery, state: FSMContext):
-    await call.message.answer("❗️ Проверка оплаты происходит автоматически в течении 1 минуты для оплаты через QIWI "
+    await call.message.answer("❗️ Проверка оплаты происходит автоматически в течении 1 минуты для оплаты через ЮKassa "
                               "и в течении 10 минут через криптовалюту.\n"
                               "После успешной операции вам придет уведомление об успешной оплате.")
 
