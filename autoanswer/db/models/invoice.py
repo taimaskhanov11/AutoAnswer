@@ -114,8 +114,6 @@ class InvoiceCrypto(InvoiceAbstract):
             )
             # pprint(data)
             async with session.post(cryptocloud.create_url, data=data) as res:
-                # pprint(await res.json())
-                print(await res.text())
                 result_data = await res.json()
                 del result_data["amount"]
                 del result_data["currency"]

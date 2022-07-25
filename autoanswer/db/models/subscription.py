@@ -63,6 +63,7 @@ class Subscription(SubscriptionTemplate):
                 if s.duration == 0:
                     logger.info(f"Subscription {s} expired")
                     for account in await s.user.accounts:
+                        await account.fetch_related("trigger_collection")
                         if controller := controllers.get(account.trigger_collection.pk):
                             await controller.stop()
 
