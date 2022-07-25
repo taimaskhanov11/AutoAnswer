@@ -25,6 +25,10 @@ class SubscriptionTemplate(models.Model):
         return self.title
 
     @property
+    def is_active(self):
+        return self.duration > 0
+
+    @property
     def view(self):
         return (f"Название: {self.title}\n"
                 f"Цена: {self.price}\n"

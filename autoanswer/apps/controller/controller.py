@@ -239,9 +239,11 @@ async def start_controller(account: Account):
 
 async def init_controllers():
     logger.debug("Инициализация контролеров")
-    for acc in await Account.all().prefetch_related("owner", "trigger_collection__triggers",
-                                                    "trigger_collection__account"):
-        await start_controller(acc)
+    for acc in await Account.all().prefetch_related(
+            "owner__subscription", "trigger_collection__triggers",
+            "trigger_collection__account"):
+        if acc.owner.subscription.is_active:
+            await start_controller(acc)
 
     logger.info(f"Контроллеры проинициализированы\n{pprint.pformat(controllers)}")
 
