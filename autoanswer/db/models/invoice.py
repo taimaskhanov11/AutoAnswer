@@ -121,7 +121,7 @@ class InvoiceCrypto(InvoiceAbstract):
                                                    **data,
                                                    user=user,
                                                    subscription_template=subscription_template, )
-                logger.debug(
+                logger.info(
                     f"InvoiceCrypto created [{user.user_id}][{created_invoice.invoice_id}] {created_invoice.pay_url}")
                 return created_invoice
 
@@ -163,7 +163,7 @@ class InvoiceQiwi(InvoiceAbstract):
                 comment=comment,
                 expire_at=datetime.datetime.now(TZ) + datetime.timedelta(minutes=lifetime),
             )
-            logger.debug(f"InvoiceQiwi created [{user}][{bill.id}] {bill.pay_url}")
+            logger.info(f"InvoiceQiwi created [{user}][{bill.id}] {bill.pay_url}")
             return await cls.create(**bill.dict(exclude={"id", "amount"}),
                                     user=user,
                                     subscription_template=subscription_template,
@@ -204,7 +204,7 @@ class InvoiceYooKassa(InvoiceAbstract):
             description=comment,
             amount=amount,
         )
-        logger.debug(f"InvoiceYooKassa created [{user}][{yoo_payment.id}] {yoo_payment.confirmation.confirmation_url}")
+        logger.info(f"InvoiceYooKassa created [{user}][{yoo_payment.id}] {yoo_payment.confirmation.confirmation_url}")
         return await cls.create(user=user,
                                 subscription_template=subscription_template,
                                 amount=yoo_payment.amount.value,

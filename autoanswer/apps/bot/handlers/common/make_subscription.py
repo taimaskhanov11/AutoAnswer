@@ -78,15 +78,15 @@ async def subscription_purchase_method(call: types.CallbackQuery, user: User, st
         return
 
     if call.data == "qiwi":
-        logger.debug(f"{user.user_id} Payment via QIWI")
+        logger.info(f"{user.user_id} Payment via QIWI")
         invoice = await InvoiceQiwi.create_invoice(**purchase_data)
 
     elif call.data == "yookassa":
-        logger.debug(f"{user.user_id} Payment via YooKassa")
+        logger.info(f"{user.user_id} Payment via YooKassa")
         invoice = await InvoiceYooKassa.create_invoice(**purchase_data)
 
     else:  # call.data == crypto
-        logger.debug(f"{user.user_id} Payment via Crypto")
+        logger.info(f"{user.user_id} Payment via Crypto")
         invoice = await InvoiceCrypto.create_invoice(**purchase_data)
 
     await call.message.answer(f"✅ Чек на оплату подписки {subscription.view} Создан!",
