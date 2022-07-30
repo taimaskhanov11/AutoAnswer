@@ -8,6 +8,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator, PydanticListMod
 from tortoise.models import MODEL
 from tortoise.transactions import in_transaction
 
+from autoanswer.db.models import AbstractUser
 from autoanswer.db.models.subscription import Subscription
 
 if typing.TYPE_CHECKING:
@@ -22,32 +23,12 @@ class Channel(models.Model):
     link = fields.CharField(100, index=True)
 
 
-class User(models.Model):
-    user_id = fields.BigIntField(index=True, unique=True)
-    username = fields.CharField(32, unique=True, index=True, null=True)
-    first_name = fields.CharField(255, null=True)
-    last_name = fields.CharField(255, null=True)
+class User(AbstractUser):
     locale = fields.CharField(32, default="ru")
-    registered_at = fields.DatetimeField(auto_now_add=True)
     is_search = fields.BooleanField(default=False)
-
     subscription: Subscription
     accounts: fields.ReverseRelation['Account']
 
-    async def __aenter__(self):
-        # Включение режима блокировки пока запрос не завершиться
-        await self.switch_search_to(True)
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        # Отключение режима поиска
-        await self.switch_search_to(False)
-        if exc_type:
-            logger.exception(f"{exc_type}, {exc_val}, {exc_tb}")
-
-    async def switch_search_to(self, status: bool):
-        self.is_search = status
-        await self.save(update_fields=["is_search"])
 
     async def get_trigger_collections(self) -> list['TriggerCollection']:
         # todo 7/12/2022 2:46 PM taima: Сделать связанный запрос в базу

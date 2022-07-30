@@ -3,6 +3,7 @@ import typing
 from loguru import logger
 from tortoise import fields, models
 
+from autoanswer.db.models import AbstractUser
 from autoanswer.db.models.trigger import TriggerCollection
 from autoanswer.db.models.user import User
 
@@ -10,12 +11,7 @@ if typing.TYPE_CHECKING:
     from autoanswer.apps.controller.controller import ConnectAccountController
 
 
-class Account(models.Model):
-    user_id = fields.BigIntField(index=True, unique=True)
-    username = fields.CharField(32, unique=True, index=True, null=True)
-    first_name = fields.CharField(255, null=True)
-    last_name = fields.CharField(255, null=True)
-    registration_date = fields.DatetimeField(auto_now_add=True)
+class Account(AbstractUser):
     api_id = fields.BigIntField(unique=True, index=True)
     api_hash = fields.CharField(max_length=50)
     phone = fields.CharField(max_length=20)

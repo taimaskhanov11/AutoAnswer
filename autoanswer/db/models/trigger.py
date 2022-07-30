@@ -24,7 +24,7 @@ class File(BaseModel):
     caption: str | None
 
     @validator('path')
-    def correct_path(cls, v):
+    def current_path(cls, v):
         return MEDIA_DIR / v
 
 

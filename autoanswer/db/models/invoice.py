@@ -1,22 +1,22 @@
 import datetime
 import typing
+from abc import abstractmethod
 
-from aiogram.client.session import aiohttp
 from loguru import logger
 from tortoise import models, fields
 from tortoise.transactions import atomic
 
+from autoanswer.apps.bot.utils.yookassa import YooPayment
 from autoanswer.config.config import TZ, config
+from autoanswer.utils.invoice_request import create_invoice_request, check_invoice_request
+from .base_user import TimestampMixin
 from .subscription import SubscriptionTemplate
-from ...apps.bot.utils.yookassa import YooPayment
 
 if typing.TYPE_CHECKING:
     from .user import User
 
-headers = {"Authorization": f"Token {config.payment.cryptocloud.api_key}"}
 
-
-class InvoiceAbstract(models.Model):
+class InvoiceAbstract(TimestampMixin, models.Model):
     """Абстрактный класс для создания счета"""
     subscription_template: SubscriptionTemplate = fields.ForeignKeyField("models.SubscriptionTemplate", null=True,
                                                                          on_delete=fields.SET_NULL)
@@ -24,7 +24,7 @@ class InvoiceAbstract(models.Model):
     currency = fields.CharField(5, default="RUB", description="RUB")
     amount = fields.DecimalField(17, 7)
     invoice_id = fields.CharField(50, index=True)
-    created_at = fields.DatetimeField(auto_now_add=True)
+    # created_at = fields.DatetimeField(auto_now_add=True)
     expire_at = fields.DatetimeField(default=lambda: datetime.datetime.now(TZ) + datetime.timedelta(minutes=30))
     email = fields.CharField(20, null=True)
     pay_url = fields.CharField(255)
@@ -33,21 +33,19 @@ class InvoiceAbstract(models.Model):
     class Meta:
         abstract = True
 
-    # todo 6/1/2022 11:01 AM taima: успешная оплата
-    # todo 6/1/2022 9:30 PM taima: проверка на цену и остальная логика доработать
     @atomic()
     async def successfully_paid(self):
-        # todo 7/10/2022 10:45 PM taima: проверка на цену и остальная логика доработать
         await self.fetch_related("user__subscription", "subscription_template")
         self.user.subscription.title = self.subscription_template.title
         self.user.subscription.duration += self.subscription_template.duration
         self.user.subscription.price = self.subscription_template.price
         self.is_paid = True
-        await self.user.subscription.save()
+        await self.user.subscription.save(update_fields=["title", "duration", "price"])
         await self.save(update_fields=["is_paid"])
 
+    @abstractmethod
     async def check_payment(self) -> bool:
-        pass
+        """"""
 
     @classmethod
     async def create_invoice(cls, **kwargs):
@@ -82,14 +80,7 @@ class InvoiceCrypto(InvoiceAbstract):
     order_id = fields.CharField(50, null=True, description="Custom product ID")
 
     async def check_payment(self) -> bool:
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(config.payment.cryptocloud.status_url,
-                                   params={"uuid": self.invoice_id}) as res:
-                result = await res.json()
-                logger.trace(result)
-                if result["status_invoice"] == "paid":
-                    return True
-        return False
+        return await check_invoice_request(config.payment.cryptocloud, self.invoice_id)
 
     @classmethod
     async def create_invoice(cls,
@@ -103,27 +94,27 @@ class InvoiceCrypto(InvoiceAbstract):
                              shop_id: str = config.payment.cryptocloud.shop_id,
                              lifetime: int = 60) -> 'InvoiceCrypto':
         cryptocloud = config.payment.cryptocloud
-        async with aiohttp.ClientSession(headers=headers) as session:
-            data = dict(
-                amount=amount,
-                currency=currency,
-                email=email,
-                order_id=order_id,
-                expire_at=datetime.datetime.now(TZ) + datetime.timedelta(minutes=lifetime),
-                shop_id=shop_id
-            )
-            # pprint(data)
-            async with session.post(cryptocloud.create_url, data=data) as res:
-                result_data = await res.json()
-                del result_data["amount"]
-                del result_data["currency"]
-                created_invoice = await cls.create(**result_data,
-                                                   **data,
-                                                   user=user,
-                                                   subscription_template=subscription_template, )
-                logger.info(
-                    f"InvoiceCrypto created [{user.user_id}][{created_invoice.invoice_id}] {created_invoice.pay_url}")
-                return created_invoice
+        data = dict(
+            amount=amount,
+            currency=currency,
+            email=email,
+            order_id=order_id,
+            expire_at=datetime.datetime.now(TZ) + datetime.timedelta(minutes=lifetime),
+            shop_id=shop_id
+        )
+        result_data = await create_invoice_request(cryptocloud, data=data)
+        del result_data["amount"]
+        del result_data["currency"]
+        created_invoice = await cls.create(
+            **result_data,
+            **data,
+            user=user,
+            subscription_template=subscription_template,
+        )
+
+        logger.info(
+            f"InvoiceCrypto created [{user.user_id}][{created_invoice.invoice_id}] {created_invoice.pay_url}")
+        return created_invoice
 
 
 class InvoiceQiwi(InvoiceAbstract):
@@ -148,7 +139,6 @@ class InvoiceQiwi(InvoiceAbstract):
             return True
         return False
 
-    # todo 5/22/2022 3:46 PM taima: сделать для других валют
     @classmethod
     async def create_invoice(cls,
                              user: "User",

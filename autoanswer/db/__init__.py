@@ -3,14 +3,11 @@ from loguru import logger
 from tortoise import Tortoise
 
 __all__ = (
-    "MODELS_DIR",
     "init_db",
     "models",
     "utils"
 )
-from autoanswer.config.config import Database, config
-
-MODELS_DIR = "autoanswer.db.models"
+from autoanswer.config.config import Database, config, MODELS_DIR
 
 
 async def init_db(db: Database = config.db):

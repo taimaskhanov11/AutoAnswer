@@ -15,6 +15,7 @@ LOG_DIR = BASE_DIR / "logs"
 MEDIA_DIR = BASE_DIR / 'media'
 LOG_DIR.mkdir(exist_ok=True)
 MEDIA_DIR.mkdir(exist_ok=True)
+MODELS_DIR = "autoanswer.db.models"
 
 I18N_DOMAIN = "autoanswer"
 LOCALES_DIR = BASE_DIR / "autoanswer/apps/bot/locales"
@@ -65,6 +66,10 @@ class CryptoCloud(BaseModel):
     api_key: str
     create_url: str
     status_url: str
+
+    @property
+    def headers(self):
+        return {"Authorization": f"Token {self.api_key}"}
 
 
 class Qiwi(BaseModel):

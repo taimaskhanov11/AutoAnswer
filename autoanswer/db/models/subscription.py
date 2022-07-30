@@ -5,6 +5,7 @@ from tortoise import models, fields
 from tortoise.functions import Sum
 
 from autoanswer.apps.bot.temp import controllers
+from autoanswer.db.models.base_user import TimestampMixin
 
 if typing.TYPE_CHECKING:
     from autoanswer.db.models.user import User
@@ -15,7 +16,7 @@ class AbstractSubscription(models.Model):
 
 
 # todo 5/31/2022 12:38 PM taima: сделать дневной лимит
-class SubscriptionTemplate(models.Model):
+class SubscriptionTemplate(TimestampMixin, models.Model):
     """Шаблоны для создания подписок"""
     title = fields.CharField(255, default="Базовая подписка", index=True)
     price = fields.IntField(default=0)
@@ -48,6 +49,7 @@ class SubscriptionTemplate(models.Model):
         #     await s.delete()
         await cls.create_from_dict(sub_data)
         logger.info("Subscriptions refreshed")
+
     @classmethod
     async def update_subscriptions(cls, sub_data: list[dict]):
         await SubscriptionTemplate.create_from_dict(sub_data)
@@ -60,11 +62,8 @@ class SubscriptionTemplate(models.Model):
         logger.info("Subscriptions updated")
 
 
-
 class Subscription(SubscriptionTemplate):
     """Подписки с привязкой к пользователю"""
-    title = fields.CharField(255, default="Базовая подписка")
-    connected_at = fields.DatetimeField(auto_now_add=True)
     user: "User" = fields.OneToOneField("models.User")
 
     @classmethod

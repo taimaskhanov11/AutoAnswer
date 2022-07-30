@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 from pathlib import Path
@@ -5,6 +6,7 @@ from pathlib import Path
 from loguru import logger
 
 from autoanswer.config.config import LOG_DIR
+from autoanswer.db.models import Log
 
 
 class InterceptHandler(logging.Handler):
@@ -24,6 +26,11 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
+class DatabaseHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord):
+        asyncio.create_task(Log.create(level=record.levelname, message=str(record)))
+
+
 def init_logging(level="TRACE", steaming=True, write=True):
     logger.remove()
     logging.basicConfig(handlers=[InterceptHandler()], level=0)
@@ -35,6 +42,14 @@ def init_logging(level="TRACE", steaming=True, write=True):
             enqueue=True,
             diagnose=True,
         )
+        logger.add(
+            sink=DatabaseHandler(),
+            # sink=emit,
+            level='WARNING',
+            # enqueue=True,
+            diagnose=True,
+        )
+
     if write:
         logger.add(
             sink=Path(LOG_DIR, f"logs.log"),
@@ -48,5 +63,4 @@ def init_logging(level="TRACE", steaming=True, write=True):
 
 
 if __name__ == "__main__":
-    init_logging(old_logger=True, level="TRACE", old_level=logging.INFO, steaming=True, write=True)
-    logger.info("hi")
+    init_logging(level="TRACE", steaming=True, write=True)

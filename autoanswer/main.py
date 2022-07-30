@@ -13,7 +13,7 @@ from autoanswer.apps.controller.controller import init_controllers
 from autoanswer.config.config import config, load_yaml
 from autoanswer.config.logg_settings_new import init_logging
 from autoanswer.db import init_db
-from autoanswer.db.models import Subscription, SubscriptionTemplate
+from autoanswer.db.models import Subscription, SubscriptionTemplate, AbstractUser
 from autoanswer.db.utils.backup import making_backup
 from autoanswer.loader import bot, dp, scheduler
 
@@ -34,6 +34,9 @@ async def start():
         write=True,
     )
 
+    # Инициализация бд
+    await init_db()
+
     dp.startup.register(start_up_message)
     # dp.shutdown.register(on_shutdown)
 
@@ -44,8 +47,7 @@ async def start():
 
     await set_commands(bot)
     dp.message.filter(F.chat.type == "private")
-    # Инициализация бд
-    await init_db()
+
 
     # Меню админа
     register_admin_handlers(dp)
@@ -83,7 +85,6 @@ async def start():
 
 def main():
     asyncio.run(start())
-    asyncio.get_event_loop()
 
 
 if __name__ == "__main__":
